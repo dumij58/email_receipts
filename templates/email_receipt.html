@@ -1,0 +1,168 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magazine Purchase Receipt</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #7B2CBF 0%, #5A189A 100%); padding: 40px 30px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Purchase Confirmed!</h1>
+                            <p style="color: #E0AAFF; margin: 10px 0 0 0; font-size: 16px;">Thank you for your order</p>
+                        </td>
+                    </tr>
+
+                    <!-- Order Summary Banner -->
+                    <tr>
+                        <td style="background-color: #C0C0C0; padding: 20px 30px; border-bottom: 3px solid #7B2CBF;">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="color: #2d2d2d; font-size: 14px;">
+                                        <strong>Order #:</strong> <span style="color: #5A189A;">[ORDER_NUMBER]</span>
+                                    </td>
+                                    <td align="right" style="color: #2d2d2d; font-size: 14px;">
+                                        <strong>Date:</strong> {{ receipt_date }}
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Main Content -->
+                    <tr>
+                        <td style="padding: 30px;">
+
+                            <!-- Magazine Details -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 25px;">
+                                <tr>
+                                    <td style="padding-bottom: 15px;">
+                                        <h2 style="color: #7B2CBF; margin: 0; font-size: 20px; border-bottom: 2px solid #E0AAFF; padding-bottom: 10px;">Order Details</h2>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="background-color: #F8F9FA; padding: 20px; border-radius: 8px; border-left: 4px solid #7B2CBF;">
+                                        <table width="100%" cellpadding="8" cellspacing="0">
+                                            <tr>
+                                                <td style="color: #666; font-size: 14px;">Magazine Title:</td>
+                                                <td align="right" style="color: #2d2d2d; font-weight: 600; font-size: 14px;">{{ magazine_name }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #666; font-size: 14px;">Purchase Date:</td>
+                                                <td align="right" style="color: #2d2d2d; font-weight: 600; font-size: 14px;">{{ purchase_date }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #666; font-size: 14px;">Edition:</td>
+                                                <td align="right" style="color: #2d2d2d; font-weight: 600; font-size: 14px;">{{ edition }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #666; font-size: 14px;">Quantity:</td>
+                                                <td align="right" style="color: #2d2d2d; font-weight: 600; font-size: 14px;">{{ quantity }}</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Payment Summary -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 25px;">
+                                <tr>
+                                    <td style="padding-bottom: 15px;">
+                                        <h2 style="color: #7B2CBF; margin: 0; font-size: 20px; border-bottom: 2px solid #E0AAFF; padding-bottom: 10px;">Payment Summary</h2>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="background-color: #F8F9FA; padding: 20px; border-radius: 8px; border-left: 4px solid #C0C0C0;">
+                                        <table width="100%" cellpadding="8" cellspacing="0">
+                                            <tr>
+                                                <td style="color: #666; font-size: 14px;">Amount:</td>
+                                                <td align="right" style="color: #2d2d2d; font-size: 14px;">Rs.{{ purchase_amount }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2" style="border-top: 2px solid #C0C0C0; padding-top: 8px;"></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #7B2CBF; font-weight: 700; font-size: 18px;">Total Paid:</td>
+                                                <td align="right" style="color: #7B2CBF; font-weight: 700; font-size: 18px;">Rs.{{ purchase_amount }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #666; font-size: 12px; padding-top: 5px;">Payment Method:</td>
+                                                <td align="right" style="color: #666; font-size: 12px; padding-top: 5px;">[PAYMENT_METHOD]</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Billing & Shipping -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 25px;">
+                                <tr>
+                                    <td width="48%" valign="top" style="background-color: #F8F9FA; padding: 15px; border-radius: 8px;">
+                                        <h3 style="color: #7B2CBF; margin: 0 0 10px 0; font-size: 16px;">Billing Information</h3>
+                                        <p style="margin: 5px 0; color: #666; font-size: 13px; line-height: 1.6;">
+                                            {{ recipient_name }}<br>
+                                            <span style="color: #999; font-size: 12px;">Transaction ID: [TRANSACTION_ID]</span>
+                                        </p>
+                                    </td>
+                                    <td width="4%"></td>
+                                    <td width="48%" valign="top" style="background-color: #F8F9FA; padding: 15px; border-radius: 8px;">
+                                        <h3 style="color: #7B2CBF; margin: 0 0 10px 0; font-size: 16px;">Shipping Address</h3>
+                                        <p style="margin: 5px 0; color: #666; font-size: 13px; line-height: 1.6;">
+                                            [STREET_ADDRESS]<br>
+                                            [CITY, STATE ZIP_CODE]<br>
+                                            [COUNTRY]
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Access Info -->
+                            <!--
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+                                <tr>
+                                    <td style="background: linear-gradient(135deg, #E0AAFF 0%, #C0C0C0 100%); padding: 20px; border-radius: 8px; text-align: center;">
+                                        <h3 style="color: #5A189A; margin: 0 0 10px 0; font-size: 18px;">📖 Access Your Magazine</h3>
+                                        <p style="margin: 0; color: #2d2d2d; font-size: 14px; line-height: 1.6;">
+                                            <strong>Digital:</strong> Available now in your account<br>
+                                            <strong>Print:</strong> Ships within [X] business days<br>
+                                            <span style="color: #5A189A; font-size: 13px;">Estimated delivery: [DELIVERY_DATE]</span>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            -->
+
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #2d2d2d; padding: 30px; text-align: center;">
+                            <h3 style="color: #C0C0C0; margin: 0 0 15px 0; font-size: 16px;">Need Help?</h3>
+                            <p style="margin: 0 0 10px 0; color: #999; font-size: 14px;">
+                                📧 support@[company].com<br>
+                                📞 [PHONE_NUMBER]<br>
+                                🕒 [BUSINESS_HOURS]
+                            </p>
+                            <p style="margin: 20px 0 0 0; color: #666; font-size: 12px; line-height: 1.6;">
+                                Please keep this email as proof of purchase.<br>
+                                This is an automated receipt. Please do not reply directly to this email.
+                            </p>
+                            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #444;">
+                                <p style="margin: 0; color: #7B2CBF; font-size: 14px; font-weight: 600;">FOSMedia</p>
+                                <p style="margin: 5px 0 0 0; color: #999; font-size: 12px;">https://fosmedia.cmb.ac.lk</p>
+                            </div>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Send Single Email - Email Receipts{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: 500;
+    }
+    
+    .form-group input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+    
+    .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: transform 0.2s;
+        width: 100%;
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .btn:active {
+        transform: translateY(0);
+    }
+    
+    .form-help {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Send Single Email Receipt</h2>
+    <p style="color: #666; margin-bottom: 30px;">Fill in the customer details to send an email receipt</p>
+    
+    <form method="POST" action="{{ url_for('send_single') }}">
+        <div class="form-group">
+            <label for="email">Email Address *</label>
+            <input type="email" id="email" name="email" required placeholder="customer@example.com">
+        </div>
+        
+        <div class="form-group">
+            <label for="name">Customer Name *</label>
+            <input type="text" id="name" name="name" required placeholder="John Doe">
+        </div>
+        
+        <div class="form-group">
+            <label for="magazine_name">Magazine Name *</label>
+            <input type="text" id="magazine_name" name="magazine_name" required placeholder="Tech Monthly">
+        </div>
+        
+        <div class="form-group">
+            <label for="purchase_amount">Purchase Amount *</label>
+            <input type="number" id="purchase_amount" name="purchase_amount" step="0.01" required placeholder="29.99">
+            <div class="form-help">Enter amount without currency symbol (e.g., 29.99)</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="purchase_date">Purchase Date *</label>
+            <input type="date" id="purchase_date" name="purchase_date" required>
+        </div>
+        
+        <button type="submit" class="btn">Send Email Receipt</button>
+    </form>
+</div>
+{% endblock %}

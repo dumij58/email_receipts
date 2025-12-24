@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Send Bulk Emails - Email Receipts{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .upload-area {
+        border: 2px dashed #667eea;
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+        margin: 30px 0;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+    
+    .upload-area:hover {
+        border-color: #764ba2;
+        background: #f8f9fa;
+    }
+    
+    .upload-icon {
+        font-size: 48px;
+        margin-bottom: 20px;
+    }
+    
+    .file-input {
+        display: none;
+    }
+    
+    .btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: transform 0.2s;
+        width: 100%;
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .file-name {
+        margin-top: 20px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 5px;
+        display: none;
+    }
+    
+    .csv-format {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 30px;
+    }
+    
+    .csv-format h3 {
+        color: #667eea;
+        margin-bottom: 15px;
+    }
+    
+    .csv-format code {
+        display: block;
+        background: white;
+        padding: 15px;
+        border-radius: 5px;
+        overflow-x: auto;
+        font-size: 12px;
+    }
+    
+    .download-template {
+        display: inline-block;
+        margin-top: 15px;
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .download-template:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Send Bulk Email Receipts</h2>
+    <p style="color: #666; margin-bottom: 30px;">Upload a CSV file to send receipts to multiple customers</p>
+    
+    <form method="POST" action="{{ url_for('send_bulk') }}" enctype="multipart/form-data" id="bulkForm">
+        <div class="upload-area" onclick="document.getElementById('csv_file').click()">
+            <div class="upload-icon">📁</div>
+            <h3>Click to Upload CSV File</h3>
+            <p style="color: #666; margin-top: 10px;">or drag and drop your file here</p>
+            <input type="file" id="csv_file" name="csv_file" class="file-input" accept=".csv" required>
+        </div>
+        
+        <div class="file-name" id="fileName"></div>
+        
+        <button type="submit" class="btn" id="submitBtn" disabled>Send Bulk Emails</button>
+    </form>
+    
+    <div class="csv-format">
+        <h3>📋 CSV File Format</h3>
+        <p style="margin-bottom: 15px;">Your CSV file should have the following columns:</p>
+        <code>email,name,magazine_name,purchase_amount,purchase_date
+john@example.com,John Doe,Tech Monthly,29.99,2025-01-15
+jane@example.com,Jane Smith,Fashion Weekly,19.99,2025-01-14</code>
+        
+        <p style="margin-top: 15px; color: #666;">
+            <strong>Required columns:</strong>
+        </p>
+        <ul style="margin-left: 20px; line-height: 2;">
+            <li><code>email</code> - Customer's email address</li>
+            <li><code>name</code> - Customer's full name</li>
+            <li><code>magazine_name</code> - Name of the magazine purchased</li>
+            <li><code>purchase_amount</code> - Amount paid (without currency symbol)</li>
+            <li><code>purchase_date</code> - Date of purchase (YYYY-MM-DD format)</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('csv_file');
+    const fileName = document.getElementById('fileName');
+    const submitBtn = document.getElementById('submitBtn');
+    const uploadArea = document.querySelector('.upload-area');
+    
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            fileName.textContent = '📄 Selected file: ' + this.files[0].name;
+            fileName.style.display = 'block';
+            submitBtn.disabled = false;
+        }
+    });
+    
+    // Drag and drop functionality
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#764ba2';
+        this.style.background = '#f8f9fa';
+    });
+    
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#667eea';
+        this.style.background = 'transparent';
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#667eea';
+        this.style.background = 'transparent';
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0 && files[0].name.endsWith('.csv')) {
+            fileInput.files = files;
+            fileName.textContent = '📄 Selected file: ' + files[0].name;
+            fileName.style.display = 'block';
+            submitBtn.disabled = false;
+        }
+    });
+</script>
+{% endblock %}

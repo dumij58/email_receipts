@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Email Receipts{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard {
+        text-align: center;
+    }
+    
+    .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+        margin-top: 40px;
+    }
+    
+    .card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s;
+        cursor: pointer;
+        text-decoration: none;
+        display: block;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    .card-icon {
+        font-size: 48px;
+        margin-bottom: 20px;
+    }
+    
+    .card h3 {
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+    
+    .card p {
+        opacity: 0.9;
+        line-height: 1.6;
+    }
+    
+    .info-section {
+        background: #f8f9fa;
+        padding: 30px;
+        border-radius: 10px;
+        margin-top: 40px;
+        text-align: left;
+    }
+    
+    .info-section h3 {
+        color: #667eea;
+        margin-bottom: 15px;
+    }
+    
+    .info-section ul {
+        list-style-position: inside;
+        line-height: 2;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h2>Welcome to Email Receipts System</h2>
+    <p>Send professional email receipts to your magazine buyers</p>
+    
+    <div class="cards">
+        <a href="{{ url_for('send_single') }}" class="card">
+            <div class="card-icon">✉️</div>
+            <h3>Send Single Email</h3>
+            <p>Send a receipt to one customer at a time with custom details</p>
+        </a>
+        
+        <a href="{{ url_for('send_bulk') }}" class="card">
+            <div class="card-icon">📬</div>
+            <h3>Send Bulk Emails</h3>
+            <p>Upload a CSV file to send receipts to multiple customers at once</p>
+        </a>
+    </div>
+    
+    <div class="info-section">
+        <h3>📋 How to Use</h3>
+        <ul>
+            <li><strong>Single Email:</strong> Fill in the customer details in the form and send individual receipts</li>
+            <li><strong>Bulk Email:</strong> Upload a CSV file with columns: email, name, magazine_name, purchase_amount, purchase_date</li>
+            <li><strong>Configuration:</strong> Set your SMTP credentials in the .env file before using</li>
+        </ul>
+        
+        <h3 style="margin-top: 20px;">✅ Features</h3>
+        <ul>
+            <li>Professional HTML email templates</li>
+            <li>Support for both single and bulk sending</li>
+            <li>CSV file upload for batch processing</li>
+            <li>RESTful API endpoints available</li>
+            <li>Dockerized for easy deployment</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
