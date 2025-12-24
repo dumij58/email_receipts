@@ -141,6 +141,9 @@
                 <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}class="active"{% endif %}>Dashboard</a>
                 <a href="{{ url_for('send_single') }}" {% if request.endpoint == 'send_single' %}class="active"{% endif %}>Send Single</a>
                 <a href="{{ url_for('send_bulk') }}" {% if request.endpoint == 'send_bulk' %}class="active"{% endif %}>Send Bulk</a>
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('logout') }}" style="background: #dc3545; color: white;">Logout</a>
+                {% endif %}
             </div>
         </nav>
         

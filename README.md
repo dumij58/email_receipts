@@ -2,8 +2,36 @@
 
 A professional Flask application for sending email receipts to magazine buyers. Features a clean web interface for sending individual and bulk emails, with full Docker support for easy deployment.
 
+## 🚀 Quick Start
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/dumij58/email_receipts.git
+cd email_receipts
+
+# 2. Set up environment
+cp .env.example .env
+nano .env  # Update with your credentials
+
+# 3. Run security check
+python3 scripts/check_security.py
+
+# 4. Start with Docker (recommended)
+./scripts/docker_deploy.sh start
+
+# Or run locally
+pip install -r requirements.txt
+python3 app.py
+```
+
+**Access at:** http://localhost:5001  
+**Default login:** admin / admin123 (⚠️ Change in production!)
+
+> 📖 **New to this project?** Start with the [Security Summary](docs/SECURITY_SUMMARY.md) to understand security features.
+
 ## Features
 
+- 🔐 **User Authentication**: Secure login system to protect the application
 - 📧 **Single Email Sending**: Send individual receipts with custom details
 - 📬 **Bulk Email Sending**: Upload CSV files to send receipts to multiple customers
 - 🎨 **Clean Web Interface**: Modern, responsive UI built with HTML/CSS
@@ -16,13 +44,25 @@ A professional Flask application for sending email receipts to magazine buyers. 
 
 ```
 email-receipts/
-├── app.py                  # Main Flask application
+├── app.py                  # Main Flask application with authentication
+├── app_basic.py           # Basic version (backup)
 ├── email_service.py        # Email sending logic
 ├── templates/              # HTML templates
-│   ├── base.html          # Base template
+│   ├── base.html          # Base template with logout button
 │   ├── index.html         # Dashboard
+│   ├── login.html         # Login page
 │   ├── send_single.html   # Single email form
 │   └── send_bulk.html     # Bulk email form
+├── docs/                   # Documentation
+│   ├── LOGIN_FEATURE.md
+│   ├── SECURITY_SUMMARY.md
+│   ├── SECURITY_RECOMMENDATIONS.md
+│   ├── DOCKER_DEPLOYMENT.md
+│   └── DOCKER_UPDATE_SUMMARY.md
+├── scripts/                # Utility scripts
+│   ├── check_security.py
+│   ├── setup_credentials.sh
+│   └── docker_deploy.sh
 ├── requirements.txt        # Python dependencies
 ├── Dockerfile             # Docker configuration
 ├── docker-compose.yml     # Docker Compose configuration
@@ -56,12 +96,16 @@ SMTP_USERNAME=your-email@gmail.com
 SMTP_PASSWORD=your-app-password
 SENDER_EMAIL=your-email@gmail.com
 SENDER_NAME=Magazine Store
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin123
 ```
 
 **For Gmail users**: You need to create an App Password:
 1. Go to https://myaccount.google.com/apppasswords
 2. Generate a new app password
 3. Use that password in the `.env` file
+
+**⚠️ Important**: Change the default admin credentials (`ADMIN_USERNAME` and `ADMIN_PASSWORD`) before deploying to production!
 
 ### 3. Local Development Setup
 
@@ -111,11 +155,23 @@ docker-compose up -d --build
 
 ## Usage
 
+### Login
+
+When you first access the application, you'll be redirected to the login page.
+
+**Default Credentials:**
+- Username: `admin`
+- Password: `admin123`
+
+**⚠️ Security Note**: These are default credentials for development. **Always change them** in production by setting the `ADMIN_USERNAME` and `ADMIN_PASSWORD` environment variables in your `.env` file.
+
 ### Web Interface
 
-1. **Dashboard** (`/`): Overview and navigation
-2. **Send Single Email** (`/send-single`): Form for individual receipts
-3. **Send Bulk Emails** (`/send-bulk`): CSV upload for batch sending
+1. **Login Page** (`/login`): Secure authentication
+2. **Dashboard** (`/`): Overview and navigation (requires login)
+3. **Send Single Email** (`/send-single`): Form for individual receipts (requires login)
+4. **Send Bulk Emails** (`/send-bulk`): CSV upload for batch sending (requires login)
+5. **Logout**: Click the red "Logout" button in the navigation bar
 
 ### CSV File Format for Bulk Sending
 
@@ -221,11 +277,56 @@ http://your-server-ip:5000
 
 ## Security Notes
 
-- Never commit `.env` file to version control
-- Use strong secret keys in production
-- Consider using SSL/TLS for SMTP (port 465)
-- Implement rate limiting for production use
-- Add authentication for web interface if needed
+- ✅ **Login Required**: All routes except `/login` require authentication
+- 🔐 **Change Default Credentials**: Update `ADMIN_USERNAME` and `ADMIN_PASSWORD` in `.env`
+- 🔑 Never commit `.env` file to version control (already in `.gitignore`)
+- 🔒 Use strong secret keys and passwords in production
+- 🔐 Consider using SSL/TLS for SMTP (port 465)
+- ⚡ Implement rate limiting for production use
+- 🛡️ Use HTTPS in production to protect login credentials in transit
+
+### Adding More Users
+
+Currently, the app uses a simple in-memory user store. To add more users:
+
+1. Edit `app.py` and add users to the `USERS` dictionary
+2. For production, consider implementing a database-backed user system
+
+## 📚 Documentation
+
+### Quick Reference
+- **[Scripts Guide](scripts/README.md)** - Utility scripts documentation
+- **[Login Feature Guide](docs/LOGIN_FEATURE.md)** - Authentication system documentation
+- **[Security Summary](docs/SECURITY_SUMMARY.md)** - Security overview and quick reference
+- **[Security Recommendations](docs/SECURITY_RECOMMENDATIONS.md)** - Detailed security best practices
+- **[Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md)** - Complete Docker deployment instructions
+- **[Docker Update Summary](docs/DOCKER_UPDATE_SUMMARY.md)** - Docker configuration changes
+
+### Security Tools
+```bash
+# Check your security configuration
+python3 scripts/check_security.py
+
+# Set up credentials interactively
+./scripts/setup_credentials.sh
+
+# Generate strong SECRET_KEY
+python3 -c "import secrets; print(secrets.token_hex(32))"
+```
+
+### Docker Quick Commands
+```bash
+# Using the deployment script
+./scripts/docker_deploy.sh start    # Start application
+./scripts/docker_deploy.sh status   # Check status
+./scripts/docker_deploy.sh logs     # View logs
+./scripts/docker_deploy.sh security # Run security check
+
+# Or use docker-compose directly
+docker-compose up -d         # Start
+docker-compose logs -f web   # View logs
+docker-compose down          # Stop
+```
 
 ## Development
 
@@ -240,7 +341,8 @@ python -m pytest
 
 1. Edit the code
 2. Test locally: `python app.py`
-3. Rebuild Docker: `docker-compose up -d --build`
+3. Run security check: `python3 scripts/check_security.py`
+4. Rebuild Docker: `docker-compose up -d --build`
 
 ## License
 

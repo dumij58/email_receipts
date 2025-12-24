@@ -5,17 +5,21 @@ services:
     build: .
     container_name: email-receipts-app
     ports:
-      - "5000:5000"
+      - "5001:5001"
     environment:
       - FLASK_APP=app.py
       - FLASK_ENV=production
       - SECRET_KEY=${SECRET_KEY:-change-this-secret-key-in-production}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
       - SMTP_SERVER=${SMTP_SERVER:-smtp.gmail.com}
       - SMTP_PORT=${SMTP_PORT:-587}
       - SMTP_USERNAME=${SMTP_USERNAME}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - SENDER_EMAIL=${SENDER_EMAIL}
       - SENDER_NAME=${SENDER_NAME:-Magazine Store}
+      - MAGAZINE_NAME=${MAGAZINE_NAME:-SYNEXIS'25}
+      - PURCHASE_AMOUNT=${PURCHASE_AMOUNT:-1000.00}
     env_file:
       - .env
     volumes:
@@ -24,7 +28,7 @@ services:
     networks:
       - email-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5001/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3

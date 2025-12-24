@@ -1,0 +1,35 @@
+# Optional Security Enhancement Packages
+# Install these for production deployment: pip install -r requirements-security.txt
+
+# Rate Limiting & DDoS Protection
+Flask-Limiter==3.5.0
+redis==5.0.1
+
+# CSRF Protection (alternative to manual implementation)
+Flask-WTF==1.2.1
+
+# Security Headers (alternative to manual implementation)
+Flask-Talisman==1.1.0
+
+# Database for User Management (optional upgrade)
+Flask-SQLAlchemy==3.1.1
+psycopg2-binary==2.9.9  # PostgreSQL adapter
+
+# Password strength validation
+zxcvbn==4.4.28
+
+# Two-Factor Authentication (future enhancement)
+pyotp==2.9.0
+qrcode==7.4.2
+
+# Secure session storage
+Flask-Session==0.5.0
+
+# API rate limiting and throttling
+slowapi==0.1.9
+
+# Security scanning
+safety==3.0.1
+
+# Environment variable validation
+python-decouple==3.8
