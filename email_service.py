@@ -84,19 +84,16 @@ class EmailService:
                 # Expected CSV columns: email, name, magazine_name, purchase_amount, purchase_date
                 recipient_email = row.get('email', '').strip()
                 recipient_name = row.get('name', '').strip()
-                magazine_name = row.get('magazine_name', '').strip()
-                purchase_amount = row.get('purchase_amount', '').strip()
                 purchase_date = row.get('purchase_date', '').strip()
                 
-                if not all([recipient_email, recipient_name, magazine_name, 
-                           purchase_amount, purchase_date]):
+                if not all([recipient_email, recipient_name, purchase_date]):
                     logger.warning(f"Skipping row with missing data: {row}")
                     failed_count += 1
                     continue
                 
                 success = self.send_single_receipt(
-                    recipient_email, recipient_name, magazine_name,
-                    purchase_amount, purchase_date
+                    recipient_email, recipient_name, self.magazine_name,
+                    self.purchase_amount, purchase_date
                 )
                 
                 if success:
