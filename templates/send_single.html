@@ -31,11 +31,11 @@
     
     .form-group input:focus {
         outline: none;
-        border-color: #667eea;
+        border-color: #3e1c68;
     }
     
     .btn {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #3e1c68 0%, #764ba2 100%);
         color: white;
         padding: 12px 30px;
         border: none;
@@ -65,7 +65,7 @@
 {% block content %}
 <div class="form-container">
     <h2>Send Single Email Receipt</h2>
-    <p style="color: #666; margin-bottom: 30px;">Fill in the customer details to send an email receipt</p>
+    <p style="color: #666; margin-bottom: 30px;">Fill in the customer details</p>
     
     <form method="POST" action="{{ url_for('send_single') }}">
         <div class="form-group">
@@ -76,17 +76,6 @@
         <div class="form-group">
             <label for="name">Customer Name *</label>
             <input type="text" id="name" name="name" required placeholder="John Doe">
-        </div>
-        
-        <div class="form-group">
-            <label for="magazine_name">Magazine Name *</label>
-            <input type="text" id="magazine_name" name="magazine_name" required placeholder="Tech Monthly">
-        </div>
-        
-        <div class="form-group">
-            <label for="purchase_amount">Purchase Amount *</label>
-            <input type="number" id="purchase_amount" name="purchase_amount" step="0.01" required placeholder="29.99">
-            <div class="form-help">Enter amount without currency symbol (e.g., 29.99)</div>
         </div>
         
         <div class="form-group">

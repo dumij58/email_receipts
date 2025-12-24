@@ -12,6 +12,9 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 # Initialize email service
 email_service = EmailService()
 
+magazine_name = email_service.magazine_name
+purchase_amount = email_service.purchase_amount
+
 @app.route('/')
 def index():
     """Main dashboard page"""
@@ -24,12 +27,10 @@ def send_single():
         try:
             recipient_email = request.form.get('email')
             recipient_name = request.form.get('name')
-            magazine_name = request.form.get('magazine_name')
-            purchase_amount = request.form.get('purchase_amount')
             purchase_date = request.form.get('purchase_date')
             
             # Validate inputs
-            if not all([recipient_email, recipient_name, magazine_name, purchase_amount, purchase_date]):
+            if not all([recipient_email, recipient_name, purchase_date]):
                 flash('All fields are required', 'error')
                 return redirect(url_for('send_single'))
             
@@ -127,4 +128,4 @@ def api_send_email():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5858, debug=True)

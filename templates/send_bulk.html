@@ -10,7 +10,7 @@
     }
     
     .upload-area {
-        border: 2px dashed #667eea;
+        border: 2px dashed #3e1c68;
         border-radius: 10px;
         padding: 40px;
         text-align: center;
@@ -34,7 +34,7 @@
     }
     
     .btn {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #3e1c68 0%, #764ba2 100%);
         color: white;
         padding: 12px 30px;
         border: none;
@@ -71,7 +71,7 @@
     }
     
     .csv-format h3 {
-        color: #667eea;
+        color: #3e1c68;
         margin-bottom: 15px;
     }
     
@@ -87,7 +87,7 @@
     .download-template {
         display: inline-block;
         margin-top: 15px;
-        color: #667eea;
+        color: #3e1c68;
         text-decoration: none;
         font-weight: 500;
     }
@@ -119,19 +119,19 @@
     <div class="csv-format">
         <h3>📋 CSV File Format</h3>
         <p style="margin-bottom: 15px;">Your CSV file should have the following columns:</p>
-        <code>email,name,magazine_name,purchase_amount,purchase_date
-john@example.com,John Doe,Tech Monthly,29.99,2025-01-15
-jane@example.com,Jane Smith,Fashion Weekly,19.99,2025-01-14</code>
+        <code>
+            email,name,purchase_date<br>
+            john@example.com,John Doe,2025-01-15<br>
+            jane@example.com,Jane Smith,2025-01-14
+        </code>
         
         <p style="margin-top: 15px; color: #666;">
             <strong>Required columns:</strong>
         </p>
-        <ul style="margin-left: 20px; line-height: 2;">
-            <li><code>email</code> - Customer's email address</li>
-            <li><code>name</code> - Customer's full name</li>
-            <li><code>magazine_name</code> - Name of the magazine purchased</li>
-            <li><code>purchase_amount</code> - Amount paid (without currency symbol)</li>
-            <li><code>purchase_date</code> - Date of purchase (YYYY-MM-DD format)</li>
+        <ul style="margin-left: 20px;">
+            <li>email - Customer's email address</li>
+            <li>name - Customer's full name</li>
+            <li>purchase_date - Date of purchase (YYYY-MM-DD format)</li>
         </ul>
     </div>
 </div>
@@ -159,13 +159,13 @@ jane@example.com,Jane Smith,Fashion Weekly,19.99,2025-01-14</code>
     
     uploadArea.addEventListener('dragleave', function(e) {
         e.preventDefault();
-        this.style.borderColor = '#667eea';
+        this.style.borderColor = '#3e1c68';
         this.style.background = 'transparent';
     });
     
     uploadArea.addEventListener('drop', function(e) {
         e.preventDefault();
-        this.style.borderColor = '#667eea';
+        this.style.borderColor = '#3e1c68';
         this.style.background = 'transparent';
         
         const files = e.dataTransfer.files;

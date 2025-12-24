@@ -39,6 +39,14 @@
             color: #3e1c68;
             font-size: 24px;
         }
+
+        .nav-brand {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            align-items: center;
+        }
         
         .nav-links {
             display: flex;
@@ -125,7 +133,10 @@
 <body>
     <div class="container">
         <nav class="nav">
-            <h1>Synexis '25 - Email Receipts System</h1>
+            <div class="nav-brand">
+                <img src="{{ url_for('static', filename='images/synexis_logo.png') }}" alt="Synexis Logo" style="height: 50px; margin-right: 15px; border-radius: 12px;">
+                <h1>Email Receipts System</h1>
+            </div>
             <div class="nav-links">
                 <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}class="active"{% endif %}>Dashboard</a>
                 <a href="{{ url_for('send_single') }}" {% if request.endpoint == 'send_single' %}class="active"{% endif %}>Send Single</a>

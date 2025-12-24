@@ -19,10 +19,13 @@ class EmailService:
         self.smtp_password = os.environ.get('SMTP_PASSWORD', '')
         self.sender_email = os.environ.get('SENDER_EMAIL', self.smtp_username)
         self.sender_name = os.environ.get('SENDER_NAME', 'Magazine Store')
+        self.magazine_name = os.environ.get('MAGAZINE_NAME', '[MAGAZINE_NAME]')
+        self.purchase_amount = os.environ.get('PURCHASE_AMOUNT', '[PURCHASE_AMOUNT]')
     
     def is_configured(self):
         """Check if SMTP is properly configured"""
         return bool(self.smtp_username and self.smtp_password)
+    
     def create_receipt_email(self, recipient_name, magazine_name, purchase_amount, purchase_date):
         """Create HTML email content for receipt"""
         html_content = render_template(
@@ -34,7 +37,6 @@ class EmailService:
             receipt_date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             sender_name=self.sender_name
         )
-        return html_content
         return html_content
     
     def send_email(self, recipient_email, subject, html_content):
