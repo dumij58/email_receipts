@@ -13,7 +13,7 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #3e1c68 0%, #000000 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -36,7 +36,7 @@
         }
         
         .nav h1 {
-            color: #667eea;
+            color: #3e1c68;
             font-size: 24px;
         }
         
@@ -55,12 +55,12 @@
         }
         
         .nav-links a:hover {
-            background: #667eea;
+            background: #3e1c68;
             color: white;
         }
         
         .nav-links a.active {
-            background: #667eea;
+            background: #3e1c68;
             color: white;
         }
         
@@ -125,7 +125,7 @@
 <body>
     <div class="container">
         <nav class="nav">
-            <h1>📧 Email Receipts System</h1>
+            <h1>Synexis '25 - Email Receipts System</h1>
             <div class="nav-links">
                 <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}class="active"{% endif %}>Dashboard</a>
                 <a href="{{ url_for('send_single') }}" {% if request.endpoint == 'send_single' %}class="active"{% endif %}>Send Single</a>

@@ -24,7 +24,7 @@
                             <table width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td style="color: #2d2d2d; font-size: 14px;">
-                                        <strong>Order #:</strong> <span style="color: #5A189A;">[ORDER_NUMBER]</span>
+                                        <strong>Order:</strong> <span style="color: #5A189A;">{{ order_number }}</span>
                                     </td>
                                     <td align="right" style="color: #2d2d2d; font-size: 14px;">
                                         <strong>Date:</strong> {{ receipt_date }}
@@ -106,7 +106,7 @@
                                         <h3 style="color: #7B2CBF; margin: 0 0 10px 0; font-size: 16px;">Billing Information</h3>
                                         <p style="margin: 5px 0; color: #666; font-size: 13px; line-height: 1.6;">
                                             {{ recipient_name }}<br>
-                                            <span style="color: #999; font-size: 12px;">Transaction ID: [TRANSACTION_ID]</span>
+                                            <span style="color: #999; font-size: 12px;">Transaction ID: {{ transaction_id }}</span>
                                         </p>
                                     </td>
                                     <td width="4%"></td>
@@ -145,9 +145,8 @@
                         <td style="background-color: #2d2d2d; padding: 30px; text-align: center;">
                             <h3 style="color: #C0C0C0; margin: 0 0 15px 0; font-size: 16px;">Need Help?</h3>
                             <p style="margin: 0 0 10px 0; color: #999; font-size: 14px;">
-                                📧 support@[company].com<br>
-                                📞 [PHONE_NUMBER]<br>
-                                🕒 [BUSINESS_HOURS]
+                                📧 support@fosmedia.cmb.ac.lk<br>
+                                📞 [PHONE_NUMBER]
                             </p>
                             <p style="margin: 20px 0 0 0; color: #666; font-size: 12px; line-height: 1.6;">
                                 Please keep this email as proof of purchase.<br>

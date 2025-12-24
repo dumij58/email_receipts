@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Email Receipts{% endblock %}
+{% block title %}Dashboard - Synexis'25 Email Receipts{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -16,7 +16,7 @@
     }
     
     .card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #3e1c68 0%, #764ba2 100%);
         color: white;
         padding: 40px;
         border-radius: 10px;
@@ -56,7 +56,7 @@
     }
     
     .info-section h3 {
-        color: #667eea;
+        color: #3e1c68;
         margin-bottom: 15px;
     }
     
@@ -69,14 +69,14 @@
 
 {% block content %}
 <div class="dashboard">
-    <h2>Welcome to Email Receipts System</h2>
-    <p>Send professional email receipts to your magazine buyers</p>
+
+    <img src="{{ url_for('static', filename='images/synexis_logo.png') }}" alt="Synexis Logo" style="height: 100px; margin-bottom: 20px; border-radius: 24px;">
     
     <div class="cards">
         <a href="{{ url_for('send_single') }}" class="card">
             <div class="card-icon">✉️</div>
             <h3>Send Single Email</h3>
-            <p>Send a receipt to one customer at a time with custom details</p>
+            <p>Send a receipt to one customer at a time</p>
         </a>
         
         <a href="{{ url_for('send_bulk') }}" class="card">
@@ -96,7 +96,7 @@
         
         <h3 style="margin-top: 20px;">✅ Features</h3>
         <ul>
-            <li>Professional HTML email templates</li>
+            <li>Professional HTML email template</li>
             <li>Support for both single and bulk sending</li>
             <li>CSV file upload for batch processing</li>
             <li>RESTful API endpoints available</li>
