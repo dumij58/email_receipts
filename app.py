@@ -43,7 +43,7 @@ def set_security_headers(response):
     # Enable XSS protection
     response.headers['X-XSS-Protection'] = '1; mode=block'
     # Content Security Policy
-    response.headers['Content-Security-Policy'] = "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
     # Referrer policy
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
     # Permissions policy
@@ -389,6 +389,6 @@ def rate_limit_error(e):
 if __name__ == '__main__':
     # Production mode check
     if os.environ.get('FLASK_ENV') == 'production':
-        app.run(host='0.0.0.0', port=5001, debug=False)
+        app.run(host='0.0.0.0', port=5002, debug=False)
     else:
-        app.run(host='0.0.0.0', port=5001, debug=True)
+        app.run(host='0.0.0.0', port=5002, debug=True)

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found - Email Receipts{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 60px 20px;">
+    <h1 style="font-size: 72px; color: #3e1c68; margin-bottom: 20px;">404</h1>
+    <h2 style="color: #333; margin-bottom: 20px;">Page Not Found</h2>
+    <p style="color: #666; margin-bottom: 30px;">The page you're looking for doesn't exist.</p>
+    <a href="{{ url_for('index') }}" style="display: inline-block; background: linear-gradient(135deg, #3e1c68 0%, #764ba2 100%); color: white; padding: 12px 30px; border-radius: 5px; text-decoration: none;">
+        Go to Home
+    </a>
+</div>
+{% endblock %}
