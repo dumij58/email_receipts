@@ -338,18 +338,16 @@ def health_check():
     return jsonify({
         'status': 'healthy',
         'service': 'email-receipts',
-        'smtp_configured': email_service.is_configured()
+        'brevo_configured': email_service.is_configured()
     })
 
-@app.route('/api/smtp-config')
+@app.route('/api/email-config')
 @login_required
-def smtp_config():
-    """Check SMTP configuration (debug endpoint)"""
+def email_config():
+    """Check Brevo/email configuration (debug endpoint)"""
     return jsonify({
-        'smtp_server': email_service.smtp_server,
-        'smtp_port': email_service.smtp_port,
-        'smtp_username': email_service.smtp_username[:3] + '...' if email_service.smtp_username else 'NOT SET',
-        'smtp_password_set': bool(email_service.smtp_password),
+        'email_service': 'Brevo (Sendinblue)',
+        'api_key_set': bool(email_service.brevo_api_key),
         'sender_email': email_service.sender_email,
         'sender_name': email_service.sender_name,
         'magazine_name': email_service.magazine_name,

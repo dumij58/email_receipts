@@ -85,18 +85,17 @@ def check_security():
         warn("Change default admin credentials in .env file")
     print()
     
-    # Check 4: SMTP Configuration
+    # Check 4: Email Configuration
     print(f"{Colors.BOLD}4. Email Configuration{Colors.END}")
-    smtp_configured = all([
-        env_vars.get('SMTP_SERVER'),
-        env_vars.get('SMTP_USERNAME'),
-        env_vars.get('SMTP_PASSWORD')
+    brevo_configured = all([
+        env_vars.get('BREVO_API_KEY'),
+        env_vars.get('SENDER_EMAIL')
     ])
     total_checks += 1
-    if check(smtp_configured, "SMTP credentials configured"):
+    if check(brevo_configured, "Brevo API credentials configured"):
         passed_checks += 1
     else:
-        warn("Configure SMTP settings in .env file")
+        warn("Configure Brevo API key and sender email in .env file")
     print()
     
     # Check 5: HTTPS/SSL

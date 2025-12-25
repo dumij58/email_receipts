@@ -43,7 +43,7 @@ docker-compose up -d
 - 📧 **Single Email Sending**: Send individual receipts with custom details
 - 📬 **Bulk Email Sending**: Upload CSV files to send receipts to multiple customers
 - 🎨 **Clean Web Interface**: Modern, responsive UI built with HTML/CSS
-- 🔒 **Secure Configuration**: Environment-based SMTP credentials
+- 🔒 **Secure Configuration**: Environment-based API credentials
 - 🐳 **Docker Support**: Fully containerized with Docker and docker-compose
 - 📊 **API Endpoints**: RESTful API for programmatic access
 - ✅ **Professional Templates**: HTML email templates with receipt details
@@ -262,20 +262,21 @@ http://your-server-ip:5000
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `SECRET_KEY` | Flask secret key | Required |
-| `SMTP_SERVER` | SMTP server address | smtp.gmail.com |
-| `SMTP_PORT` | SMTP server port | 587 |
-| `SMTP_USERNAME` | Email account username | Required |
-| `SMTP_PASSWORD` | Email account password | Required |
-| `SENDER_EMAIL` | Sender email address | Same as SMTP_USERNAME |
+| `BREVO_API_KEY` | Brevo API key for email service | Required |
+| `SENDER_EMAIL` | Sender email address (must be verified in Brevo) | Required |
 | `SENDER_NAME` | Sender display name | Magazine Store |
+| `MAGAZINE_NAME` | Default magazine name | SYNEXIS'25 |
+| `PURCHASE_AMOUNT` | Default purchase amount | 1000.00 |
+| `ADMIN_USERNAME` | Admin login username | admin |
+| `ADMIN_PASSWORD` | Admin login password | admin123 |
 
 ## Troubleshooting
 
 ### Email Not Sending
 
-1. **Check SMTP credentials**: Verify username and password in `.env`
-2. **Gmail users**: Make sure you're using an App Password, not your regular password
-3. **Firewall**: Ensure port 587 is open for SMTP
+1. **Check Brevo API key**: Verify the API key is correct in `.env`
+2. **Verify sender email**: Make sure your sender email is verified in Brevo dashboard
+3. **Check API limits**: Free tier allows 300 emails/day
 4. **Check logs**: `docker-compose logs -f` to see error messages
 
 ### Docker Issues
@@ -290,7 +291,7 @@ http://your-server-ip:5000
 - 🔐 **Change Default Credentials**: Update `ADMIN_USERNAME` and `ADMIN_PASSWORD` in `.env`
 - 🔑 Never commit `.env` file to version control (already in `.gitignore`)
 - 🔒 Use strong secret keys and passwords in production
-- 🔐 Consider using SSL/TLS for SMTP (port 465)
+- 🔐 Keep your Brevo API key secure and never expose it publicly
 - ⚡ Implement rate limiting for production use
 - 🛡️ Use HTTPS in production to protect login credentials in transit
 

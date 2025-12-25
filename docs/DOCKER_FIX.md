@@ -34,10 +34,8 @@ Add this content:
 SECRET_KEY=your-secret-key-here
 ADMIN_USERNAME=dumij58
 ADMIN_PASSWORD=dumijfosmedia
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
+BREVO_API_KEY=your-brevo-api-key
+SENDER_EMAIL=your-verified-email@example.com
 SENDER_EMAIL=your-email@gmail.com
 SENDER_NAME=Magazine Store
 MAGAZINE_NAME=SYNEXIS'25

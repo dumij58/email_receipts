@@ -16,7 +16,7 @@ python3 scripts/check_security.py
 - ✅ Environment file (.env) exists
 - ✅ SECRET_KEY is secure (32+ characters)
 - ✅ Admin credentials changed from defaults
-- ✅ SMTP configuration
+- ✅ Brevo API configuration
 - ✅ File permissions (.env should be 600)
 - ✅ Required dependencies installed
 - ✅ Debug mode settings

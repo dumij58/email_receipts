@@ -163,7 +163,7 @@ def health_check():
     return jsonify({
         'status': 'healthy',
         'service': 'email-receipts',
-        'smtp_configured': email_service.is_configured()
+        'brevo_configured': email_service.is_configured()
     })
 @app.route('/api/send-email', methods=['POST'])
 @login_required

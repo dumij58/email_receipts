@@ -29,12 +29,9 @@ SECRET_KEY=your-64-character-secret-key-here
 ADMIN_USERNAME=your_secure_username
 ADMIN_PASSWORD=your_strong_password
 
-# SMTP Configuration
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-SENDER_EMAIL=your-email@gmail.com
+# Brevo Email Configuration
+BREVO_API_KEY=your-brevo-api-key
+SENDER_EMAIL=your-verified-email@example.com
 SENDER_NAME=Magazine Store
 
 # Application Settings
@@ -255,7 +252,8 @@ docker inspect email-receipts-app
 
 - [ ] Strong SECRET_KEY generated and set
 - [ ] Default admin credentials changed
-- [ ] SMTP credentials configured
+- [ ] Brevo API key configured
+- [ ] Sender email verified in Brevo
 - [ ] `.env` file secured (chmod 600)
 - [ ] HTTPS/SSL configured (if internet-facing)
 - [ ] Reverse proxy set up (nginx/Apache)
