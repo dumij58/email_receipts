@@ -17,7 +17,7 @@ docker-compose logs -f web
 docker-compose ps
 ```
 
-The application will be available at: **http://localhost:5001**
+The application will be available at: **http://localhost:5858**
 
 ### 2. Configure Environment Variables
 
@@ -106,7 +106,7 @@ server {
     limit_req_zone $binary_remote_addr zone=login:10m rate=5r/m;
     
     location / {
-        proxy_pass http://localhost:5001;
+        proxy_pass http://localhost:5858;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -115,7 +115,7 @@ server {
     
     location /login {
         limit_req zone=login burst=3 nodelay;
-        proxy_pass http://localhost:5001/login;
+        proxy_pass http://localhost:5858/login;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -133,7 +133,7 @@ services:
     build: .
     container_name: email-receipts-app
     expose:
-      - "5001"  # Only expose to nginx, not publicly
+      - "8080"  # Only expose to nginx, not publicly
     environment:
       - FLASK_ENV=production
     env_file:
@@ -144,7 +144,7 @@ services:
     networks:
       - email-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/api/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/health', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -273,7 +273,7 @@ docker inspect email-receipts-app
 docker-compose logs web
 
 # Check if port is already in use
-lsof -i :5001
+lsof -i :5858
 
 # Rebuild from scratch
 docker-compose down -v
@@ -290,7 +290,7 @@ docker-compose ps
 docker inspect email-receipts-app | grep -A 10 Health
 
 # Test from inside container
-docker-compose exec web curl http://localhost:5001/api/health
+docker-compose exec web curl http://localhost:8080/api/health
 ```
 
 ### Environment variables not loaded
@@ -340,7 +340,8 @@ RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 USER appuser
 ENV PATH=/root/.local/bin:$PATH
-EXPOSE 5001
+ENV FLASK_RUN_PORT=8080
+EXPOSE 8080
 CMD ["python", "app.py"]
 ```
 
@@ -362,7 +363,7 @@ services:
 ### 3. Use Gunicorn for Production
 Update CMD in Dockerfile:
 ```dockerfile
-CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--workers", "2", "--threads", "4", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "--threads", "4", "app:app"]
 ```
 
 ## Monitoring & Logging

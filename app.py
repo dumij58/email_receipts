@@ -387,8 +387,11 @@ def rate_limit_error(e):
     return jsonify({'error': 'Too many requests'}), 429
 
 if __name__ == '__main__':
+    # Get port from environment variable, default to 5002 for local dev
+    port = int(os.environ.get('FLASK_RUN_PORT', 5002))
+    
     # Production mode check
     if os.environ.get('FLASK_ENV') == 'production':
-        app.run(host='0.0.0.0', port=5002, debug=False)
+        app.run(host='0.0.0.0', port=port, debug=False)
     else:
-        app.run(host='0.0.0.0', port=5002, debug=True)
+        app.run(host='0.0.0.0', port=port, debug=True)
