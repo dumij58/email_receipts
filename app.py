@@ -17,9 +17,14 @@ from functools import wraps
 import secrets
 
 # Load environment variables from .env file (only if not in Docker)
-if not os.path.exists('/.dockerenv'):
+# Check multiple indicators for Docker environment
+is_docker = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER') == 'true'
+if not is_docker:
     from dotenv import load_dotenv
     load_dotenv()
+    print("Loaded .env file for local development")
+else:
+    print("Running in Docker - using environment variables from docker-compose")
 
 app = Flask(__name__)
 
@@ -48,7 +53,8 @@ def set_security_headers(response):
     # Enable XSS protection
     response.headers['X-XSS-Protection'] = '1; mode=block'
     # Content Security Policy - relaxed to allow browser extensions and devtools
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"
+    # Note: blob: added to script-src to prevent browser extension conflicts
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"
     # Referrer policy
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
     # Permissions policy

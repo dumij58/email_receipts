@@ -6,7 +6,9 @@ import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 
 # Load environment variables from .env file (only if not in Docker)
-if not os.path.exists('/.dockerenv'):
+# Check multiple indicators for Docker environment
+is_docker = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER') == 'true'
+if not is_docker:
     try:
         from dotenv import load_dotenv
         load_dotenv()
@@ -26,19 +28,21 @@ class EmailService:
         self.magazine_name = os.environ.get('MAGAZINE_NAME', '[MAGAZINE_NAME]')
         self.purchase_amount = os.environ.get('PURCHASE_AMOUNT', '[PURCHASE_AMOUNT]')
         
+        # Debug logging to verify environment variables
+        logger.info(f"Initializing EmailService in {'Docker' if is_docker else 'Local'} environment")
+        logger.info(f"Brevo API Key configured: {bool(self.brevo_api_key)} (length: {len(self.brevo_api_key) if self.brevo_api_key else 0})")
+        logger.info(f"Sender Email: {self.sender_email}")
+        logger.info(f"Sender Name: {self.sender_name}")
+        
         # Initialize Brevo client
         if self.brevo_api_key:
             configuration = sib_api_v3_sdk.Configuration()
             configuration.api_key['api-key'] = self.brevo_api_key
             self.api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+            logger.info("Brevo API client initialized successfully")
         else:
             self.api_instance = None
-            logger.warning("Brevo API key not configured")
-        
-        # Debug logging (only if not in production)
-        if os.environ.get('FLASK_ENV') != 'production':
-            logger.info(f"Brevo API Key configured: {bool(self.brevo_api_key)}")
-            logger.info(f"Sender Email: {self.sender_email}")
+            logger.error("CRITICAL: Brevo API key not configured - emails will not be sent!")
     
     def is_configured(self):
         """Check if Brevo is properly configured"""
