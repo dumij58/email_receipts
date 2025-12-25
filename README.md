@@ -83,7 +83,7 @@ email-receipts/
 
 - Python 3.11+ (for local development)
 - Docker and Docker Compose (for containerized deployment)
-- SMTP email account (Gmail, Outlook, etc.)
+- Brevo account (free tier: 300 emails/day)
 
 ## Setup Instructions
 
@@ -97,21 +97,22 @@ Copy the example environment file and update with your credentials:
 cp .env.example .env
 ```
 
-Edit `.env` and add your SMTP credentials:
+Edit `.env` and add your Brevo credentials:
 
 ```env
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-SENDER_EMAIL=your-email@gmail.com
+BREVO_API_KEY=your-brevo-api-key
+SENDER_EMAIL=your-verified-email@example.com
 SENDER_NAME=Magazine Store
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin123
 ```
 
-**For Gmail users**: You need to create an App Password:
-1. Go to https://myaccount.google.com/apppasswords
-2. Generate a new app password
-3. Use that password in the `.env` file
+**Setting up Brevo (Sendinblue)**:
+1. Sign up at https://brevo.com (free tier: 300 emails/day)
+2. Verify your sender email: Senders → Add a Sender → Verify email
+3. Create an API Key: Account → SMTP & API → API Keys → Create a new API key
+4. Copy the API key and add it to your `.env` file as `BREVO_API_KEY`
+5. Use your verified email as `SENDER_EMAIL`
 
 **⚠️ Important**: Change the default admin credentials (`ADMIN_USERNAME` and `ADMIN_PASSWORD`) before deploying to production!
 

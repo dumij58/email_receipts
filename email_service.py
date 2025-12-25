@@ -1,10 +1,9 @@
-import smtplib
 import os
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 import logging
 from flask import render_template
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
 
 # Load environment variables from .env file (only if not in Docker)
 if not os.path.exists('/.dockerenv'):
@@ -18,28 +17,32 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class EmailService:
-    """Service for handling email operations"""
+    """Service for handling email operations using Brevo (Sendinblue)"""
     
     def __init__(self):
-        self.smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
-        self.smtp_port = int(os.environ.get('SMTP_PORT', 587))
-        self.smtp_username = os.environ.get('SMTP_USERNAME', '')
-        self.smtp_password = os.environ.get('SMTP_PASSWORD', '')
-        self.sender_email = os.environ.get('SENDER_EMAIL', self.smtp_username)
+        self.brevo_api_key = os.environ.get('BREVO_API_KEY', '') or os.environ.get('SENDGRID_API_KEY', '')
+        self.sender_email = os.environ.get('SENDER_EMAIL', '')
         self.sender_name = os.environ.get('SENDER_NAME', 'Magazine Store')
         self.magazine_name = os.environ.get('MAGAZINE_NAME', '[MAGAZINE_NAME]')
         self.purchase_amount = os.environ.get('PURCHASE_AMOUNT', '[PURCHASE_AMOUNT]')
         
+        # Initialize Brevo client
+        if self.brevo_api_key:
+            configuration = sib_api_v3_sdk.Configuration()
+            configuration.api_key['api-key'] = self.brevo_api_key
+            self.api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+        else:
+            self.api_instance = None
+            logger.warning("Brevo API key not configured")
+        
         # Debug logging (only if not in production)
         if os.environ.get('FLASK_ENV') != 'production':
-            logger.info(f"SMTP Server: {self.smtp_server}:{self.smtp_port}")
-            logger.info(f"SMTP Username: {self.smtp_username[:3]}...{self.smtp_username[-3:] if len(self.smtp_username) > 6 else ''}")
-            logger.info(f"SMTP Password configured: {bool(self.smtp_password)}")
+            logger.info(f"Brevo API Key configured: {bool(self.brevo_api_key)}")
             logger.info(f"Sender Email: {self.sender_email}")
     
     def is_configured(self):
-        """Check if SMTP is properly configured"""
-        return bool(self.smtp_username and self.smtp_password)
+        """Check if Brevo is properly configured"""
+        return bool(self.brevo_api_key and self.sender_email)
     
     def create_receipt_email(self, recipient_name, magazine_name, purchase_amount, purchase_date):
         """Create HTML email content for receipt"""
@@ -55,41 +58,32 @@ class EmailService:
         return html_content
     
     def send_email(self, recipient_email, subject, html_content):
-        """Send an email using SMTP"""
+        """Send an email using Brevo API"""
         try:
-            # Log configuration for debugging
+            if not self.api_instance:
+                logger.error("Brevo client not initialized. Check API key.")
+                return False
+            
+            # Log for debugging
             logger.info(f"Attempting to send email to {recipient_email}")
-            logger.info(f"SMTP: {self.smtp_server}:{self.smtp_port}")
             
-            # Create message
-            message = MIMEMultipart('alternative')
-            message['Subject'] = subject
-            message['From'] = f"{self.sender_name} <{self.sender_email}>"
-            message['To'] = recipient_email
+            # Create Brevo email object
+            send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+                to=[{"email": recipient_email}],
+                sender={"name": self.sender_name, "email": self.sender_email},
+                subject=subject,
+                html_content=html_content
+            )
             
-            # Attach HTML content
-            html_part = MIMEText(html_content, 'html')
-            message.attach(html_part)
+            # Send email via Brevo API
+            logger.info(f"Sending message via Brevo API...")
+            api_response = self.api_instance.send_transac_email(send_smtp_email)
             
-            # Connect to SMTP server and send
-            logger.info(f"Connecting to SMTP server...")
-            with smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=10) as server:
-                logger.info(f"Starting TLS...")
-                server.starttls()
-                logger.info(f"Logging in with username: {self.smtp_username[:3]}...")
-                server.login(self.smtp_username, self.smtp_password)
-                logger.info(f"Sending message...")
-                server.send_message(message)
-            
-            logger.info(f"Email sent successfully to {recipient_email}")
+            logger.info(f"Email sent successfully to {recipient_email} (Message ID: {api_response.message_id})")
             return True
             
-        except smtplib.SMTPAuthenticationError as e:
-            logger.error(f"SMTP Authentication failed: {str(e)}")
-            logger.error(f"Username: {self.smtp_username}, Password configured: {bool(self.smtp_password)}")
-            return False
-        except smtplib.SMTPException as e:
-            logger.error(f"SMTP Error sending to {recipient_email}: {str(e)}")
+        except ApiException as e:
+            logger.error(f"Brevo API Exception: {e}")
             return False
         except Exception as e:
             logger.error(f"Failed to send email to {recipient_email}: {str(e)}")
