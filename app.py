@@ -388,7 +388,7 @@ def rate_limit_error(e):
 
 if __name__ == '__main__':
     # Get port from environment variable, default to 5002 for local dev
-    port = int(os.environ.get('FLASK_RUN_PORT', 5002))
+    port = int(os.environ.get('FLASK_RUN_PORT', 8080))
     
     # Production mode check
     if os.environ.get('FLASK_ENV') == 'production':
