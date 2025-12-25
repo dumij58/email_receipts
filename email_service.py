@@ -6,6 +6,14 @@ from datetime import datetime
 import logging
 from flask import render_template
 
+# Load environment variables from .env file (only if not in Docker)
+if not os.path.exists('/.dockerenv'):
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -21,6 +29,13 @@ class EmailService:
         self.sender_name = os.environ.get('SENDER_NAME', 'Magazine Store')
         self.magazine_name = os.environ.get('MAGAZINE_NAME', '[MAGAZINE_NAME]')
         self.purchase_amount = os.environ.get('PURCHASE_AMOUNT', '[PURCHASE_AMOUNT]')
+        
+        # Debug logging (only if not in production)
+        if os.environ.get('FLASK_ENV') != 'production':
+            logger.info(f"SMTP Server: {self.smtp_server}:{self.smtp_port}")
+            logger.info(f"SMTP Username: {self.smtp_username[:3]}...{self.smtp_username[-3:] if len(self.smtp_username) > 6 else ''}")
+            logger.info(f"SMTP Password configured: {bool(self.smtp_password)}")
+            logger.info(f"Sender Email: {self.sender_email}")
     
     def is_configured(self):
         """Check if SMTP is properly configured"""
@@ -42,6 +57,10 @@ class EmailService:
     def send_email(self, recipient_email, subject, html_content):
         """Send an email using SMTP"""
         try:
+            # Log configuration for debugging
+            logger.info(f"Attempting to send email to {recipient_email}")
+            logger.info(f"SMTP: {self.smtp_server}:{self.smtp_port}")
+            
             # Create message
             message = MIMEMultipart('alternative')
             message['Subject'] = subject
@@ -53,16 +72,28 @@ class EmailService:
             message.attach(html_part)
             
             # Connect to SMTP server and send
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+            logger.info(f"Connecting to SMTP server...")
+            with smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=10) as server:
+                logger.info(f"Starting TLS...")
                 server.starttls()
+                logger.info(f"Logging in with username: {self.smtp_username[:3]}...")
                 server.login(self.smtp_username, self.smtp_password)
+                logger.info(f"Sending message...")
                 server.send_message(message)
             
             logger.info(f"Email sent successfully to {recipient_email}")
             return True
             
+        except smtplib.SMTPAuthenticationError as e:
+            logger.error(f"SMTP Authentication failed: {str(e)}")
+            logger.error(f"Username: {self.smtp_username}, Password configured: {bool(self.smtp_password)}")
+            return False
+        except smtplib.SMTPException as e:
+            logger.error(f"SMTP Error sending to {recipient_email}: {str(e)}")
+            return False
         except Exception as e:
             logger.error(f"Failed to send email to {recipient_email}: {str(e)}")
+            logger.error(f"Error type: {type(e).__name__}")
             return False
     
     def send_single_receipt(self, recipient_email, recipient_name, magazine_name, 
