@@ -9,6 +9,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from email_service import EmailService
 import os
 import csv
+import logging
 from io import StringIO
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -27,6 +28,14 @@ else:
     print("Running in Docker - using environment variables from docker-compose")
 
 app = Flask(__name__)
+
+# Configure logging to stdout for Docker
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(levelname)s:%(name)s:%(message)s',
+    handlers=[logging.StreamHandler()]
+)
+app.logger.setLevel(logging.INFO)
 
 # ============================================
 # ENHANCED SECURITY CONFIGURATION
@@ -166,9 +175,12 @@ def csrf_protect(f):
     def decorated_function(*args, **kwargs):
         if request.method == "POST":
             token = request.form.get('_csrf_token')
+            app.logger.info(f"CSRF Check: Token received: {bool(token)}")
             if not token or not validate_csrf_token(token):
+                app.logger.warning(f"CSRF validation failed for {request.path}")
                 flash('Invalid security token. Please try again.', 'error')
                 return redirect(request.url)
+            app.logger.info("CSRF validation passed")
         return f(*args, **kwargs)
     return decorated_function
 
@@ -251,22 +263,28 @@ def index():
 def send_single():
     """Send a single email receipt with enhanced validation"""
     if request.method == 'POST':
+        app.logger.info("Processing email send request")
         try:
             recipient_email = sanitize_input(request.form.get('email', ''))
             recipient_name = sanitize_input(request.form.get('name', ''))
             purchase_date = sanitize_input(request.form.get('purchase_date', ''))
             
+            app.logger.info(f"Form data received - Email: {recipient_email}, Name: {recipient_name}, Date: {purchase_date}")
+            
             # Validate inputs
             if not all([recipient_email, recipient_name, purchase_date]):
+                app.logger.warning("Missing required fields")
                 flash('All fields are required', 'error')
                 return redirect(url_for('send_single'))
             
             # Validate email format
             if not validate_email(recipient_email):
+                app.logger.warning(f"Invalid email format: {recipient_email}")
                 flash('Invalid email address format', 'error')
                 return redirect(url_for('send_single'))
             
             # Send email
+            app.logger.info(f"Calling email_service.send_single_receipt for {recipient_email}")
             success = email_service.send_single_receipt(
                 recipient_email=recipient_email,
                 recipient_name=recipient_name,
@@ -275,6 +293,7 @@ def send_single():
                 purchase_date=purchase_date
             )
             
+            app.logger.info(f"Email send result: {success}")
             if success:
                 flash(f'Email successfully sent to {recipient_email}', 'success')
             else:
@@ -282,7 +301,8 @@ def send_single():
                 
         except Exception as e:
             # Log error but don't expose details to user
-            app.logger.error(f'Error sending email: {str(e)}')
+            app.logger.error(f'Error sending email: {str(e)}', exc_info=True)
+            flash('An error occurred while sending the email.', 'error')
             flash('An error occurred while sending the email.', 'error')
             
         return redirect(url_for('send_single'))

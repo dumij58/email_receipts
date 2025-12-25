@@ -40,7 +40,7 @@ echo ""
 echo "=========================================="
 echo "Recent logs (checking environment):"
 echo "=========================================="
-docker-compose logs --tail=30
+docker-compose logs --tail=50
 
 echo ""
 echo "=========================================="
@@ -50,6 +50,6 @@ echo ""
 echo "To view live logs, run:"
 echo "  docker-compose logs -f"
 echo ""
-echo "To check if emails are being sent:"
-echo "  docker-compose logs | grep -i 'email\|brevo\|api key'"
+echo "To check email sending logs specifically:"
+echo "  docker-compose logs -f | grep -i 'email\\|brevo\\|api key\\|csrf'"
 echo ""
