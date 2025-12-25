@@ -6,7 +6,7 @@
 
 1. **Check if Brevo credentials are loaded in container:**
 ```bash
-docker-compose exec web env | grep BREVO
+docker compose exec web env | grep BREVO
 ```
 
 Should output:
@@ -32,7 +32,7 @@ This will show:
 
 3. **Check Docker logs for errors:**
 ```bash
-docker-compose logs web | grep -i "brevo\|email\|failed to send"
+docker compose logs web | grep -i "brevo\|email\|failed to send"
 ```
 
 ## Common Issues & Solutions
@@ -53,12 +53,12 @@ pwd
 ls -la .env docker-compose.yml
 
 # 3. Rebuild container
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
+docker compose down
+docker compose build --no-cache
+docker compose up -d
 
 # 4. Verify again
-docker-compose exec web env | grep BREVO
+docker compose exec web env | grep BREVO
 ```
 
 ### Issue 2: Brevo Authentication Error
@@ -82,8 +82,8 @@ SENDER_EMAIL=your-verified-email@example.com
 
 3. **Rebuild:**
 ```bash
-docker-compose down
-docker-compose up -d
+docker compose down
+docker compose up -d
 ```
 
 ### Issue 3: Sender Email Not Verified
@@ -106,8 +106,8 @@ SENDER_EMAIL=your-verified-email@example.com
 
 3. **Rebuild:**
 ```bash
-docker-compose down
-docker-compose up -d
+docker compose down
+docker compose up -d
 ```
 
 ### Issue 4: Network connectivity from Docker
@@ -121,10 +121,10 @@ docker-compose up -d
 1. **Test network from container:**
 ```bash
 # Test internet connectivity
-docker-compose exec web curl -I https://api.brevo.com
+docker compose exec web curl -I https://api.brevo.com
 
 # Check if container can access external APIs
-docker-compose exec web curl -I https://www.google.com
+docker compose exec web curl -I https://www.google.com
 ```
 
 2. **If connection fails, check Docker network:**
@@ -175,7 +175,7 @@ SMTP_PASSWORD=mypassword
 
 ### Test 1: Check configuration
 ```bash
-docker-compose exec web python3 -c "
+docker compose exec web python3 -c "
 from email_service import EmailService
 es = EmailService()
 print(f'Configured: {es.is_configured()}')
@@ -187,7 +187,7 @@ print(f'Password set: {bool(es.smtp_password)}')
 
 ### Test 2: Test SMTP connection
 ```bash
-docker-compose exec web python3 -c "
+docker compose exec web python3 -c "
 import smtplib
 import os
 
@@ -215,7 +215,7 @@ except Exception as e:
 ### Test 3: Send test email
 ```bash
 # Replace with your email
-docker-compose exec web python3 -c "
+docker compose exec web python3 -c "
 from email_service import EmailService
 from datetime import datetime
 
@@ -240,24 +240,24 @@ Run through this checklist:
 - [ ] .env contains SMTP_PASSWORD (app password)
 - [ ] No spaces around = in .env
 - [ ] Container rebuilt after .env changes
-- [ ] Environment variables visible in container (`docker-compose exec web env | grep SMTP`)
+- [ ] Environment variables visible in container (`docker compose exec web env | grep SMTP`)
 - [ ] Network connectivity from container to smtp.gmail.com:587
 - [ ] 2FA enabled on Gmail account
 - [ ] App password generated and used (not regular password)
-- [ ] Logs show SMTP configuration loaded (`docker-compose logs web | grep SMTP`)
+- [ ] Logs show SMTP configuration loaded (`docker compose logs web | grep SMTP`)
 - [ ] API endpoint shows is_configured: true
 
 ## View Detailed Logs
 
 ```bash
 # Watch logs in real-time
-docker-compose logs -f web
+docker compose logs -f web
 
 # Filter for email-related logs
-docker-compose logs web | grep -i "email\|smtp"
+docker compose logs web | grep -i "email\|smtp"
 
 # Last 50 lines
-docker-compose logs --tail=50 web
+docker compose logs --tail=50 web
 ```
 
 ## Complete Reset (Nuclear Option)
@@ -266,7 +266,7 @@ If nothing works, start completely fresh:
 
 ```bash
 # 1. Stop everything
-docker-compose down -v
+docker compose down -v
 
 # 2. Remove all containers and images
 docker system prune -a -f
@@ -275,10 +275,10 @@ docker system prune -a -f
 cat .env
 
 # 4. Rebuild from scratch
-docker-compose build --no-cache
+docker compose build --no-cache
 
 # 5. Start with logs visible
-docker-compose up
+docker compose up
 
 # Watch the logs as it starts to see any errors
 ```
@@ -288,7 +288,7 @@ docker-compose up
 1. **Check container logs during email send:**
 ```bash
 # In one terminal, watch logs:
-docker-compose logs -f web
+docker compose logs -f web
 
 # In another, try sending an email from the web interface
 ```
@@ -299,7 +299,7 @@ Add to docker-compose.yml under environment:
 - FLASK_ENV=development  # Enables verbose logging
 ```
 
-Then rebuild: `docker-compose down && docker-compose up -d`
+Then rebuild: `docker compose down && docker compose up -d`
 
 3. **Test with different SMTP provider:**
 Try using a different email service temporarily to isolate the issue:
@@ -330,19 +330,19 @@ SMTP_PASSWORD=your-password
 
 ```bash
 # Check config
-docker-compose exec web env | grep SMTP
+docker compose exec web env | grep SMTP
 
 # Test SMTP connection
-docker-compose exec web nc -zv smtp.gmail.com 587
+docker compose exec web nc -zv smtp.gmail.com 587
 
 # View logs
-docker-compose logs -f web
+docker compose logs -f web
 
 # Restart container
-docker-compose restart web
+docker compose restart web
 
 # Full rebuild
-docker-compose down && docker-compose build --no-cache && docker-compose up -d
+docker compose down && docker compose build --no-cache && docker compose up -d
 
 # Check API endpoint
 curl http://localhost:5858/api/smtp-config  # After login

@@ -50,7 +50,7 @@ check_docker() {
         exit 1
     fi
     
-    if ! command -v docker-compose &> /dev/null; then
+    if ! command -v docker compose &> /dev/null; then
         print_error "Docker Compose is not installed!"
         print_info "Install from: https://docs.docker.com/compose/install/"
         exit 1
@@ -62,12 +62,12 @@ start_app() {
     check_env_file
     
     # Build and start
-    docker-compose up -d --build
+    docker compose up -d --build
     
     if [ $? -eq 0 ]; then
         print_success "Application started successfully!"
         print_info "Access the application at: http://localhost:5001"
-        print_info "View logs with: docker-compose logs -f web"
+        print_info "View logs with: docker compose logs -f web"
         
         # Wait for health check
         sleep 3
@@ -77,7 +77,7 @@ start_app() {
             print_success "Application is healthy!"
         else
             print_warning "Application may still be starting up..."
-            print_info "Check logs: docker-compose logs web"
+            print_info "Check logs: docker compose logs web"
         fi
     else
         print_error "Failed to start application!"
@@ -87,7 +87,7 @@ start_app() {
 
 stop_app() {
     echo "🛑 Stopping Email Receipts Application..."
-    docker-compose stop
+    docker compose stop
     
     if [ $? -eq 0 ]; then
         print_success "Application stopped successfully!"
@@ -99,7 +99,7 @@ stop_app() {
 
 restart_app() {
     echo "🔄 Restarting Email Receipts Application..."
-    docker-compose restart
+    docker compose restart
     
     if [ $? -eq 0 ]; then
         print_success "Application restarted successfully!"
@@ -115,13 +115,13 @@ rebuild_app() {
     check_env_file
     
     print_info "Stopping existing containers..."
-    docker-compose down
+    docker compose down
     
     print_info "Building fresh images..."
-    docker-compose build --no-cache
+    docker compose build --no-cache
     
     print_info "Starting application..."
-    docker-compose up -d
+    docker compose up -d
     
     if [ $? -eq 0 ]; then
         print_success "Application rebuilt and started successfully!"
@@ -134,7 +134,7 @@ rebuild_app() {
 
 show_logs() {
     print_info "Showing application logs (Ctrl+C to exit)..."
-    docker-compose logs -f web
+    docker compose logs -f web
 }
 
 show_status() {
@@ -144,7 +144,7 @@ show_status() {
     
     # Container status
     print_info "Container Status:"
-    docker-compose ps
+    docker compose ps
     echo ""
     
     # Health check
@@ -177,7 +177,7 @@ show_status() {
 
 run_security_check() {
     print_info "Running security check..."
-    docker-compose exec web python scripts/check_security.py
+    docker compose exec web python scripts/check_security.py
 }
 
 backup_logs() {

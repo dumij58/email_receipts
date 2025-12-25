@@ -38,7 +38,7 @@ Welcome to the Email Receipts Application documentation. This guide will help yo
 #### Troubleshoot Issues
 1. **Docker Issues**: See [Docker Deployment Guide - Troubleshooting](DOCKER_DEPLOYMENT.md#troubleshooting)
 2. **Security Check**: Run `python3 ../check_security.py`
-3. **View Logs**: Run `docker-compose logs -f web` or `./docker_deploy.sh logs`
+3. **View Logs**: Run `docker compose logs -f web` or `./docker_deploy.sh logs`
 
 ## 📖 Document Summaries
 

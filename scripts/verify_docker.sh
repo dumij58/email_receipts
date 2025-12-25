@@ -36,9 +36,9 @@ echo ""
 
 # Check Docker Compose
 echo "3. Checking Docker Compose..."
-if command -v docker-compose &> /dev/null; then
+if command -v docker compose &> /dev/null; then
     echo "   ✓ Docker Compose installed"
-    docker-compose --version
+    docker compose --version
 else
     echo "   ✗ Docker Compose not installed"
 fi
@@ -48,10 +48,10 @@ echo ""
 echo "4. Checking container status..."
 if docker ps | grep -q email-receipts-app; then
     echo "   ✓ Container is running"
-    docker-compose ps
+    docker compose ps
 else
     echo "   ✗ Container is not running"
-    echo "   → Run: docker-compose up -d"
+    echo "   → Run: docker compose up -d"
 fi
 echo ""
 
@@ -79,13 +79,13 @@ echo ""
 # Check environment variables in container
 echo "7. Checking environment variables in container..."
 if docker ps | grep -q email-receipts-app; then
-    ENV_CHECK=$(docker-compose exec -T web env | grep "ADMIN_USERNAME" 2>/dev/null)
+    ENV_CHECK=$(docker compose exec -T web env | grep "ADMIN_USERNAME" 2>/dev/null)
     if [ -n "$ENV_CHECK" ]; then
         echo "   ✓ Environment variables loaded"
-        docker-compose exec -T web env | grep "ADMIN_USERNAME"
+        docker compose exec -T web env | grep "ADMIN_USERNAME"
     else
         echo "   ✗ Environment variables not loaded"
-        echo "   → Rebuild container: docker-compose down && docker-compose up -d"
+        echo "   → Rebuild container: docker compose down && docker compose up -d"
     fi
 else
     echo "   ⊘ Container not running, skipping check"
@@ -95,7 +95,7 @@ echo ""
 # Check logs
 echo "8. Recent logs (last 20 lines)..."
 if docker ps | grep -q email-receipts-app; then
-    docker-compose logs --tail=20 web
+    docker compose logs --tail=20 web
 else
     echo "   ⊘ Container not running, no logs available"
 fi
@@ -108,10 +108,10 @@ echo "========================================"
 echo ""
 echo "To deploy/redeploy:"
 echo "  1. Ensure .env file exists with ADMIN_USERNAME and ADMIN_PASSWORD"
-echo "  2. Run: docker-compose down"
-echo "  3. Run: docker-compose build --no-cache"
-echo "  4. Run: docker-compose up -d"
-echo "  5. Check logs: docker-compose logs -f web"
+echo "  2. Run: docker compose down"
+echo "  3. Run: docker compose build --no-cache"
+echo "  4. Run: docker compose up -d"
+echo "  5. Check logs: docker compose logs -f web"
 echo ""
 echo "To test login:"
 echo "  curl -i -X POST http://localhost:5858/login \\"

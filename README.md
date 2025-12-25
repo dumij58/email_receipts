@@ -26,7 +26,7 @@ python3 app.py
 ### Docker Deployment (Production/Server)
 ```bash
 # Quick start
-docker-compose up -d
+docker compose up -d
 
 # Access at: http://your-server:5858
 ```
@@ -44,7 +44,7 @@ docker-compose up -d
 - 📬 **Bulk Email Sending**: Upload CSV files to send receipts to multiple customers
 - 🎨 **Clean Web Interface**: Modern, responsive UI built with HTML/CSS
 - 🔒 **Secure Configuration**: Environment-based API credentials
-- 🐳 **Docker Support**: Fully containerized with Docker and docker-compose
+- 🐳 **Docker Support**: Fully containerized with Docker and docker compose
 - 📊 **API Endpoints**: RESTful API for programmatic access
 - ✅ **Professional Templates**: HTML email templates with receipt details
 
@@ -139,7 +139,7 @@ Visit: http://localhost:5000
 #### Build and Run with Docker Compose
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 The application will be available at: http://localhost:5000
@@ -147,19 +147,19 @@ The application will be available at: http://localhost:5000
 #### Stop the Application
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 #### View Logs
 
 ```bash
-docker-compose logs -f
+docker compose logs -f
 ```
 
 #### Rebuild After Changes
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ## Usage
@@ -245,7 +245,7 @@ nano .env  # Edit with your credentials
 ### 4. Deploy with Docker Compose
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### 5. Access the Application
@@ -277,13 +277,13 @@ http://your-server-ip:5000
 1. **Check Brevo API key**: Verify the API key is correct in `.env`
 2. **Verify sender email**: Make sure your sender email is verified in Brevo dashboard
 3. **Check API limits**: Free tier allows 300 emails/day
-4. **Check logs**: `docker-compose logs -f` to see error messages
+4. **Check logs**: `docker compose logs -f` to see error messages
 
 ### Docker Issues
 
 1. **Port already in use**: Change port in `docker-compose.yml`
-2. **Build fails**: Run `docker-compose build --no-cache`
-3. **Container won't start**: Check logs with `docker-compose logs`
+2. **Build fails**: Run `docker compose build --no-cache`
+3. **Container won't start**: Check logs with `docker compose logs`
 
 ## Security Notes
 
@@ -332,10 +332,10 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 ./scripts/docker_deploy.sh logs     # View logs
 ./scripts/docker_deploy.sh security # Run security check
 
-# Or use docker-compose directly
-docker-compose up -d         # Start
-docker-compose logs -f web   # View logs
-docker-compose down          # Stop
+# Or use docker compose directly
+docker compose up -d         # Start
+docker compose logs -f web   # View logs
+docker compose down          # Stop
 ```
 
 ## Development
@@ -352,7 +352,7 @@ python -m pytest
 1. Edit the code
 2. Test locally: `python app.py`
 3. Run security check: `python3 scripts/check_security.py`
-4. Rebuild Docker: `docker-compose up -d --build`
+4. Rebuild Docker: `docker compose up -d --build`
 
 ## License
 

@@ -116,7 +116,7 @@ Enter admin password (press Enter for 'admin123'):
 - ✅ Automatic environment file checking
 - 🏥 Health check verification after start
 - 📊 Detailed status information
-- 🔒 Docker and docker-compose validation
+- 🔒 Docker and docker compose validation
 - 🚀 Zero-downtime restart support
 
 **Examples:**
@@ -142,7 +142,7 @@ Enter admin password (press Enter for 'admin123'):
 🚀 Starting Email Receipts Application...
 ✓ Application started successfully!
 ℹ Access the application at: http://localhost:5001
-ℹ View logs with: docker-compose logs -f web
+ℹ View logs with: docker compose logs -f web
 ℹ Checking application health...
 ✓ Application is healthy!
 ```
@@ -355,7 +355,7 @@ python3 scripts/check_security.py
 ```bash
 # Check Docker installation
 docker --version
-docker-compose --version
+docker compose --version
 
 # Start Docker daemon
 # On macOS: Open Docker Desktop

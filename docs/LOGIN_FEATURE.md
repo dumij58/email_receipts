@@ -88,7 +88,7 @@ pip install -r requirements.txt
 
 ### With Docker
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 The new Flask-Login dependency will be automatically installed.

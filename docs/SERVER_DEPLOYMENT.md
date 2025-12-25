@@ -36,7 +36,7 @@ chmod 600 .env
 
 ### Step 1: Stop existing containers
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ### Step 2: Remove old images (optional, for clean build)
@@ -46,17 +46,17 @@ docker rmi email-receipts-app:latest 2>/dev/null || true
 
 ### Step 3: Build the image
 ```bash
-docker-compose build --no-cache
+docker compose build --no-cache
 ```
 
 ### Step 4: Start the application
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Step 5: Check logs
 ```bash
-docker-compose logs -f web
+docker compose logs -f web
 ```
 
 Look for:
@@ -65,7 +65,7 @@ Look for:
 
 ### Step 6: Verify environment variables loaded
 ```bash
-docker-compose exec web env | grep ADMIN
+docker compose exec web env | grep ADMIN
 ```
 
 Should show:
@@ -89,7 +89,7 @@ curl http://localhost:5858/api/health
 
 **Check if container is running:**
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 **Check if port is accessible:**
@@ -99,7 +99,7 @@ netstat -tuln | grep 5858
 
 **Test from inside container:**
 ```bash
-docker-compose exec web curl http://localhost:8080/api/health
+docker compose exec web curl http://localhost:8080/api/health
 ```
 
 **Check firewall:**
@@ -114,12 +114,12 @@ sudo iptables -A INPUT -p tcp --dport 5858 -j ACCEPT
 
 **Check environment variables:**
 ```bash
-docker-compose exec web python3 -c "import os; print('Username:', os.environ.get('ADMIN_USERNAME')); print('Has password:', bool(os.environ.get('ADMIN_PASSWORD')))"
+docker compose exec web python3 -c "import os; print('Username:', os.environ.get('ADMIN_USERNAME')); print('Has password:', bool(os.environ.get('ADMIN_PASSWORD')))"
 ```
 
 **Check logs for DEBUG output:**
 ```bash
-docker-compose logs web | grep DEBUG
+docker compose logs web | grep DEBUG
 ```
 
 **Test login from server:**
@@ -148,8 +148,8 @@ cat .env
 
 3. **Rebuild container after .env changes:**
 ```bash
-docker-compose down
-docker-compose up -d
+docker compose down
+docker compose up -d
 ```
 
 ### Issue: Port 5858 already in use
@@ -177,7 +177,7 @@ docker inspect email-receipts-app | grep -A 10 Health
 
 **Test health endpoint manually:**
 ```bash
-docker-compose exec web python3 -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8080/api/health').read())"
+docker compose exec web python3 -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8080/api/health').read())"
 ```
 
 ## Complete Redeployment (Clean Slate)
@@ -186,7 +186,7 @@ If everything is broken, start fresh:
 
 ```bash
 # 1. Stop and remove everything
-docker-compose down -v
+docker compose down -v
 
 # 2. Remove images
 docker rmi $(docker images | grep email-receipts | awk '{print $3}')
@@ -198,13 +198,13 @@ docker system prune -a
 cat .env
 
 # 5. Build fresh
-docker-compose build --no-cache
+docker compose build --no-cache
 
 # 6. Start
-docker-compose up -d
+docker compose up -d
 
 # 7. Watch logs
-docker-compose logs -f web
+docker compose logs -f web
 ```
 
 ## Testing Login
@@ -231,7 +231,7 @@ curl -i -X POST http://localhost:5858/login \
 | Can't connect to port 5858 | Check firewall, verify container is running |
 | Login shows "Invalid credentials" | Verify .env file, check ADMIN_USERNAME and ADMIN_PASSWORD |
 | No redirect after login | Check browser console for errors, verify cookie settings |
-| Container exits immediately | Check logs with `docker-compose logs web` |
+| Container exits immediately | Check logs with `docker compose logs web` |
 | Health check fails | Increase start_period in docker-compose.yml |
 
 ## Production Recommendations
@@ -249,30 +249,30 @@ curl -i -X POST http://localhost:5858/login \
 
 ```bash
 # View logs
-docker-compose logs -f web
+docker compose logs -f web
 
 # Restart container
-docker-compose restart web
+docker compose restart web
 
 # Shell access
-docker-compose exec web /bin/bash
+docker compose exec web /bin/bash
 
 # Check environment
-docker-compose exec web env
+docker compose exec web env
 
 # Stop
-docker-compose down
+docker compose down
 
 # Start
-docker-compose up -d
+docker compose up -d
 
 # Rebuild
-docker-compose build --no-cache && docker-compose up -d
+docker compose build --no-cache && docker compose up -d
 ```
 
 ## Getting Help
 
-1. Check logs: `docker-compose logs web`
-2. Check container status: `docker-compose ps`
-3. Verify environment: `docker-compose exec web env | grep ADMIN`
+1. Check logs: `docker compose logs web`
+2. Check container status: `docker compose ps`
+3. Verify environment: `docker compose exec web env | grep ADMIN`
 4. Test health: `curl http://localhost:5858/api/health`

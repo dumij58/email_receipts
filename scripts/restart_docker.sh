@@ -13,17 +13,17 @@ cd "$(dirname "$0")/.." || exit 1
 # Stop and remove existing containers
 echo ""
 echo "Stopping existing containers..."
-docker-compose down
+docker compose down
 
 # Rebuild the image (ensures all code changes are included)
 echo ""
 echo "Rebuilding Docker image..."
-docker-compose build --no-cache
+docker compose build --no-cache
 
 # Start the containers
 echo ""
 echo "Starting containers..."
-docker-compose up -d
+docker compose up -d
 
 # Wait for container to be ready
 echo ""
@@ -33,14 +33,14 @@ sleep 5
 # Show container status
 echo ""
 echo "Container status:"
-docker-compose ps
+docker compose ps
 
 # Show recent logs
 echo ""
 echo "=========================================="
 echo "Recent logs (checking environment):"
 echo "=========================================="
-docker-compose logs --tail=50
+docker compose logs --tail=50
 
 echo ""
 echo "=========================================="
@@ -48,8 +48,8 @@ echo "Docker restart complete!"
 echo "=========================================="
 echo ""
 echo "To view live logs, run:"
-echo "  docker-compose logs -f"
+echo "  docker compose logs -f"
 echo ""
 echo "To check email sending logs specifically:"
-echo "  docker-compose logs -f | grep -i 'email\\|brevo\\|api key\\|csrf'"
+echo "  docker compose logs -f | grep -i 'email\\|brevo\\|api key\\|csrf'"
 echo ""

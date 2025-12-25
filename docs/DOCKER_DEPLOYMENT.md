@@ -5,16 +5,16 @@
 ### 1. Build and Run
 ```bash
 # Build the image
-docker-compose build
+docker compose build
 
 # Start the application
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f web
+docker compose logs -f web
 
 # Check status
-docker-compose ps
+docker compose ps
 ```
 
 The application will be available at: **http://localhost:5858**
@@ -184,59 +184,59 @@ services:
 ### Building
 ```bash
 # Build the image
-docker-compose build
+docker compose build
 
 # Build without cache
-docker-compose build --no-cache
+docker compose build --no-cache
 
 # Build specific service
-docker-compose build web
+docker compose build web
 ```
 
 ### Running
 ```bash
 # Start in background
-docker-compose up -d
+docker compose up -d
 
 # Start with logs
-docker-compose up
+docker compose up
 
 # Restart services
-docker-compose restart
+docker compose restart
 
 # Stop services
-docker-compose stop
+docker compose stop
 
 # Stop and remove containers
-docker-compose down
+docker compose down
 
 # Remove containers and volumes
-docker-compose down -v
+docker compose down -v
 ```
 
 ### Monitoring
 ```bash
 # View logs
-docker-compose logs -f web
+docker compose logs -f web
 
 # View last 100 lines
-docker-compose logs --tail=100 web
+docker compose logs --tail=100 web
 
 # Check status
-docker-compose ps
+docker compose ps
 
 # View resource usage
 docker stats email-receipts-app
 
 # Execute command in container
-docker-compose exec web python check_security.py
+docker compose exec web python check_security.py
 ```
 
 ### Maintenance
 ```bash
 # Update application (zero-downtime)
-docker-compose pull
-docker-compose up -d --build
+docker compose pull
+docker compose up -d --build
 
 # Backup logs
 tar -czf logs-backup-$(date +%Y%m%d).tar.gz logs/
@@ -268,27 +268,27 @@ docker inspect email-receipts-app
 ### Container won't start
 ```bash
 # Check logs
-docker-compose logs web
+docker compose logs web
 
 # Check if port is already in use
 lsof -i :5858
 
 # Rebuild from scratch
-docker-compose down -v
-docker-compose build --no-cache
-docker-compose up -d
+docker compose down -v
+docker compose build --no-cache
+docker compose up -d
 ```
 
 ### Can't connect to application
 ```bash
 # Check if container is running
-docker-compose ps
+docker compose ps
 
 # Check health status
 docker inspect email-receipts-app | grep -A 10 Health
 
 # Test from inside container
-docker-compose exec web curl http://localhost:8080/api/health
+docker compose exec web curl http://localhost:8080/api/health
 ```
 
 ### Environment variables not loaded
@@ -297,24 +297,24 @@ docker-compose exec web curl http://localhost:8080/api/health
 ls -la .env
 
 # Check environment in container
-docker-compose exec web env | grep ADMIN
+docker compose exec web env | grep ADMIN
 
 # Restart with fresh environment
-docker-compose down
-docker-compose up -d
+docker compose down
+docker compose up -d
 ```
 
 ### Logs not persisting
 ```bash
 # Check volume mount
-docker-compose exec web ls -la /app/logs
+docker compose exec web ls -la /app/logs
 
 # Create logs directory if missing
 mkdir -p logs
 chmod 755 logs
 
 # Restart container
-docker-compose restart web
+docker compose restart web
 ```
 
 ## Performance Optimization
@@ -432,7 +432,7 @@ tar -xzf "$BACKUP_DIR/logs.tar.gz"
 docker load < "$BACKUP_DIR/image.tar.gz"
 
 # Restart services
-docker-compose up -d
+docker compose up -d
 ```
 
 ## Security Best Practices
@@ -469,7 +469,7 @@ sudo certbot certonly --standalone -d yourdomain.com
 ## Support
 
 For issues or questions:
-1. Check logs: `docker-compose logs -f web`
-2. Run security check: `docker-compose exec web python check_security.py`
+1. Check logs: `docker compose logs -f web`
+2. Run security check: `docker compose exec web python check_security.py`
 3. Review documentation: `SECURITY_RECOMMENDATIONS.md`
-4. Check Docker health: `docker-compose ps`
+4. Check Docker health: `docker compose ps`

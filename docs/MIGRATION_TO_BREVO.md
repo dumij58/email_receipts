@@ -119,16 +119,16 @@ python3 app.py
 ### Update Docker Environment
 ```bash
 # Stop existing containers
-docker-compose down
+docker compose down
 
 # Rebuild with new dependencies
-docker-compose build --no-cache
+docker compose build --no-cache
 
 # Start with new configuration
-docker-compose up -d
+docker compose up -d
 
 # Check logs
-docker-compose logs -f web
+docker compose logs -f web
 ```
 
 ## API Endpoint Changes
@@ -183,9 +183,9 @@ cat .env | grep BREVO_API_KEY
 ### Issue: Emails not sending in Docker
 **Solution:** Rebuild container to load new configuration
 ```bash
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
+docker compose down
+docker compose build --no-cache
+docker compose up -d
 ```
 
 ## Benefits of Migration

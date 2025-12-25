@@ -50,19 +50,19 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 ### Step 2: Deploy with Docker
 ```bash
 # Stop existing container
-docker-compose down
+docker compose down
 
 # Pull latest code from git
 git pull origin main
 
 # Build fresh image
-docker-compose build --no-cache
+docker compose build --no-cache
 
 # Start container
-docker-compose up -d
+docker compose up -d
 
 # Check logs
-docker-compose logs -f web
+docker compose logs -f web
 ```
 
 ### Step 3: Verify deployment
@@ -72,10 +72,10 @@ docker-compose logs -f web
 
 # Or manually check:
 # 1. Check container is running
-docker-compose ps
+docker compose ps
 
 # 2. Verify environment variables
-docker-compose exec web env | grep ADMIN
+docker compose exec web env | grep ADMIN
 
 # 3. Test health endpoint
 curl http://localhost:5858/api/health
@@ -103,7 +103,7 @@ Login with:
 
 1. **Check logs for DEBUG output:**
 ```bash
-docker-compose logs web | grep DEBUG
+docker compose logs web | grep DEBUG
 ```
 
 Should see:
@@ -113,12 +113,12 @@ DEBUG: Loaded admin username: dumij58
 
 2. **Verify environment in container:**
 ```bash
-docker-compose exec web python3 -c "import os; print('User:', os.environ.get('ADMIN_USERNAME')); print('Pass:', os.environ.get('ADMIN_PASSWORD'))"
+docker compose exec web python3 -c "import os; print('User:', os.environ.get('ADMIN_USERNAME')); print('Pass:', os.environ.get('ADMIN_PASSWORD'))"
 ```
 
 3. **Test from inside container:**
 ```bash
-docker-compose exec web curl http://localhost:8080/login
+docker compose exec web curl http://localhost:8080/login
 ```
 
 4. **Check if .env is being read:**
@@ -132,10 +132,10 @@ cat .env
 
 5. **Complete rebuild:**
 ```bash
-docker-compose down -v
-docker-compose build --no-cache
-docker-compose up -d
-docker-compose logs -f web
+docker compose down -v
+docker compose build --no-cache
+docker compose up -d
+docker compose logs -f web
 ```
 
 ### If can't access from external IP:
@@ -188,7 +188,7 @@ git push origin main
 Then on server:
 ```bash
 git pull origin main
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
+docker compose down
+docker compose build --no-cache
+docker compose up -d
 ```

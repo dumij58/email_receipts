@@ -9,27 +9,27 @@
 
 ### 1. Stop any running containers
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ### 2. Build the Docker image
 ```bash
-docker-compose build --no-cache
+docker compose build --no-cache
 ```
 
 ### 3. Start the application
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### 4. Check logs
 ```bash
-docker-compose logs -f web
+docker compose logs -f web
 ```
 
 ### 5. Check container status
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 ### 6. Test the application
@@ -46,15 +46,15 @@ curl http://localhost:5858/api/health
 ### Container won't start
 ```bash
 # Check detailed logs
-docker-compose logs web
+docker compose logs web
 
 # Check if container is running
 docker ps -a
 
 # Restart from scratch
-docker-compose down -v
-docker-compose build --no-cache
-docker-compose up -d
+docker compose down -v
+docker compose build --no-cache
+docker compose up -d
 ```
 
 ### Can't access the web interface
@@ -63,10 +63,10 @@ docker-compose up -d
 lsof -i :5858
 
 # Check container networking
-docker-compose exec web python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8080/api/health').read())"
+docker compose exec web python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8080/api/health').read())"
 
 # Check if Flask is listening
-docker-compose exec web netstat -tuln | grep 8080
+docker compose exec web netstat -tuln | grep 8080
 ```
 
 ### Port already in use
@@ -111,34 +111,34 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 
 ```bash
 # Build
-docker-compose build
+docker compose build
 
 # Start (detached mode)
-docker-compose up -d
+docker compose up -d
 
 # Start (with logs)
-docker-compose up
+docker compose up
 
 # Stop
-docker-compose stop
+docker compose stop
 
 # Restart
-docker-compose restart
+docker compose restart
 
 # Stop and remove
-docker-compose down
+docker compose down
 
 # View logs (follow)
-docker-compose logs -f web
+docker compose logs -f web
 
 # View logs (last 100 lines)
-docker-compose logs --tail=100 web
+docker compose logs --tail=100 web
 
 # Execute command in container
-docker-compose exec web python check_security.py
+docker compose exec web python check_security.py
 
 # Shell access
-docker-compose exec web /bin/bash
+docker compose exec web /bin/bash
 ```
 
 ## Health Check
@@ -149,8 +149,8 @@ The container includes a health check that runs every 30 seconds:
 # View health status
 docker inspect email-receipts-app | grep -A 10 Health
 
-# Or using docker-compose
-docker-compose ps
+# Or using docker compose
+docker compose ps
 ```
 
 ## Logs Location

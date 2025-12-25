@@ -25,7 +25,7 @@ if not is_docker:
     load_dotenv()
     print("Loaded .env file for local development")
 else:
-    print("Running in Docker - using environment variables from docker-compose")
+    print("Running in Docker - using environment variables from docker compose")
 
 app = Flask(__name__)
 

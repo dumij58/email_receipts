@@ -57,16 +57,16 @@ Automated deployment script with commands:
 
 ## 🚀 Quick Start with Docker
 
-### Option 1: Using docker-compose (Recommended)
+### Option 1: Using docker compose (Recommended)
 ```bash
 # Build and start
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f web
+docker compose logs -f web
 
 # Check status
-docker-compose ps
+docker compose ps
 
 # Access at: http://localhost:5001
 ```
@@ -150,23 +150,23 @@ FLASK_ENV=production
 
 ### Starting & Stopping
 ```bash
-docker-compose up -d              # Start in background
-docker-compose down               # Stop and remove
-docker-compose restart            # Restart services
+docker compose up -d              # Start in background
+docker compose down               # Stop and remove
+docker compose restart            # Restart services
 ```
 
 ### Monitoring
 ```bash
-docker-compose logs -f web        # Follow logs
-docker-compose ps                 # Container status
+docker compose logs -f web        # Follow logs
+docker compose ps                 # Container status
 docker stats email-receipts-app   # Resource usage
 ```
 
 ### Maintenance
 ```bash
-docker-compose build --no-cache   # Rebuild from scratch
-docker-compose exec web bash      # Shell into container
-docker-compose exec web python check_security.py  # Security check
+docker compose build --no-cache   # Rebuild from scratch
+docker compose exec web bash      # Shell into container
+docker compose exec web python check_security.py  # Security check
 ```
 
 ## 🎯 Production Deployment Steps
@@ -178,7 +178,7 @@ cp .env.example .env
 nano .env  # Update credentials
 
 # Start application
-docker-compose up -d
+docker compose up -d
 
 # Access at http://your-server-ip:5001
 ```
@@ -191,7 +191,7 @@ sudo certbot certonly --standalone -d yourdomain.com
 # 2. Configure nginx (see DOCKER_DEPLOYMENT.md)
 # 3. Update docker-compose.yml to add nginx service
 # 4. Start everything
-docker-compose up -d
+docker compose up -d
 
 # Access at https://yourdomain.com
 ```
@@ -201,12 +201,12 @@ docker-compose up -d
 ### Container won't start
 ```bash
 # Check logs for errors
-docker-compose logs web
+docker compose logs web
 
 # Rebuild from scratch
-docker-compose down -v
-docker-compose build --no-cache
-docker-compose up -d
+docker compose down -v
+docker compose build --no-cache
+docker compose up -d
 ```
 
 ### Port already in use
@@ -223,19 +223,19 @@ lsof -i :5001
 ls -la .env
 
 # Check variables in container
-docker-compose exec web env | grep ADMIN
+docker compose exec web env | grep ADMIN
 
 # Restart to reload environment
-docker-compose down && docker-compose up -d
+docker compose down && docker compose up -d
 ```
 
 ### Health check failing
 ```bash
 # Check application status
-docker-compose exec web curl http://localhost:5001/api/health
+docker compose exec web curl http://localhost:5001/api/health
 
 # View detailed logs
-docker-compose logs --tail=100 web
+docker compose logs --tail=100 web
 ```
 
 ## 📚 Documentation Files
@@ -278,7 +278,7 @@ Everything is configured for the enhanced security version. To deploy:
 ./docker_deploy.sh start
 
 # Or manually
-docker-compose up -d
+docker compose up -d
 
 # Check everything works
 ./docker_deploy.sh status
