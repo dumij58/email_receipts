@@ -37,23 +37,40 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to ses
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF protection
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=2)  # Session timeout
 
+# Generate CSP nonce for each request
+@app.before_request
+def generate_csp_nonce():
+    """Generate a unique nonce for CSP on each request"""
+    from flask import g
+    g.csp_nonce = secrets.token_hex(16)
+
 # Security headers
 @app.after_request
 def set_security_headers(response):
     """Add security headers to all responses"""
+    from flask import g
+    
     # Prevent clickjacking
     response.headers['X-Frame-Options'] = 'DENY'
     # Prevent MIME type sniffing
     response.headers['X-Content-Type-Options'] = 'nosniff'
     # Enable XSS protection
     response.headers['X-XSS-Protection'] = '1; mode=block'
-    # Content Security Policy
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    # Content Security Policy with nonce
+    nonce = getattr(g, 'csp_nonce', '')
+    response.headers['Content-Security-Policy'] = f"default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"
     # Referrer policy
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
     # Permissions policy
     response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
     return response
+
+# Make nonce available to templates
+@app.context_processor
+def inject_csp_nonce():
+    """Make CSP nonce available in all templates"""
+    from flask import g
+    return dict(csp_nonce=getattr(g, 'csp_nonce', ''))
 
 # Initialize Flask-Login
 login_manager = LoginManager()
