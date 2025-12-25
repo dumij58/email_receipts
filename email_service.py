@@ -15,7 +15,11 @@ if not is_docker:
     except ImportError:
         pass
 
-logging.basicConfig(level=logging.INFO)
+# Debug mode configuration
+DEBUG_MODE = os.environ.get('DEBUG', 'false').lower() == 'true'
+
+log_level = logging.DEBUG if DEBUG_MODE else logging.INFO
+logging.basicConfig(level=log_level)
 logger = logging.getLogger(__name__)
 
 class EmailService:
@@ -29,17 +33,19 @@ class EmailService:
         self.purchase_amount = os.environ.get('PURCHASE_AMOUNT', '[PURCHASE_AMOUNT]')
         
         # Debug logging to verify environment variables
-        logger.info(f"Initializing EmailService in {'Docker' if is_docker else 'Local'} environment")
-        logger.info(f"Brevo API Key configured: {bool(self.brevo_api_key)} (length: {len(self.brevo_api_key) if self.brevo_api_key else 0})")
-        logger.info(f"Sender Email: {self.sender_email}")
-        logger.info(f"Sender Name: {self.sender_name}")
+        if DEBUG_MODE:
+            logger.debug(f"Initializing EmailService in {'Docker' if is_docker else 'Local'} environment")
+            logger.debug(f"Brevo API Key configured: {bool(self.brevo_api_key)} (length: {len(self.brevo_api_key) if self.brevo_api_key else 0})")
+            logger.debug(f"Sender Email: {self.sender_email}")
+            logger.debug(f"Sender Name: {self.sender_name}")
         
         # Initialize Brevo client
         if self.brevo_api_key:
             configuration = sib_api_v3_sdk.Configuration()
             configuration.api_key['api-key'] = self.brevo_api_key
             self.api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
-            logger.info("Brevo API client initialized successfully")
+            if DEBUG_MODE:
+                logger.debug("Brevo API client initialized successfully")
         else:
             self.api_instance = None
             logger.error("CRITICAL: Brevo API key not configured - emails will not be sent!")
@@ -69,7 +75,8 @@ class EmailService:
                 return False
             
             # Log for debugging
-            logger.info(f"Attempting to send email to {recipient_email}")
+            if DEBUG_MODE:
+                logger.debug(f"Attempting to send email to {recipient_email}")
             
             # Create Brevo email object
             send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
@@ -80,10 +87,12 @@ class EmailService:
             )
             
             # Send email via Brevo API
-            logger.info(f"Sending message via Brevo API...")
+            if DEBUG_MODE:
+                logger.debug(f"Sending message via Brevo API...")
             api_response = self.api_instance.send_transac_email(send_smtp_email)
             
-            logger.info(f"Email sent successfully to {recipient_email} (Message ID: {api_response.message_id})")
+            if DEBUG_MODE:
+                logger.debug(f"Email sent successfully to {recipient_email} (Message ID: {api_response.message_id})")
             return True
             
         except ApiException as e:
@@ -116,7 +125,8 @@ class EmailService:
                 purchase_date = row.get('purchase_date', '').strip()
                 
                 if not all([recipient_email, recipient_name, purchase_date]):
-                    logger.warning(f"Skipping row with missing data: {row}")
+                    if DEBUG_MODE:
+                        logger.debug(f"Skipping row with missing data: {row}")
                     failed_count += 1
                     continue
                 
@@ -134,5 +144,6 @@ class EmailService:
                 logger.error(f"Error processing row: {str(e)}")
                 failed_count += 1
         
-        logger.info(f"Bulk send completed: {success_count} success, {failed_count} failed")
+        if DEBUG_MODE:
+            logger.debug(f"Bulk send completed: {success_count} success, {failed_count} failed")
         return {'success': success_count, 'failed': failed_count}

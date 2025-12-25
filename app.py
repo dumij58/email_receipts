@@ -23,19 +23,23 @@ is_docker = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER') 
 if not is_docker:
     from dotenv import load_dotenv
     load_dotenv()
-    print("Loaded .env file for local development")
-else:
-    print("Running in Docker - using environment variables from docker compose")
 
 app = Flask(__name__)
 
+# Debug mode configuration
+DEBUG_MODE = os.environ.get('DEBUG', 'false').lower() == 'true'
+
 # Configure logging to stdout for Docker
+log_level = logging.DEBUG if DEBUG_MODE else logging.INFO
 logging.basicConfig(
-    level=logging.INFO,
+    level=log_level,
     format='%(levelname)s:%(name)s:%(message)s',
     handlers=[logging.StreamHandler()]
 )
-app.logger.setLevel(logging.INFO)
+app.logger.setLevel(log_level)
+
+if DEBUG_MODE:
+    app.logger.debug(f"Loaded .env file for local development" if not is_docker else "Running in Docker - using environment variables from docker-compose")
 
 # ============================================
 # ENHANCED SECURITY CONFIGURATION
@@ -175,12 +179,14 @@ def csrf_protect(f):
     def decorated_function(*args, **kwargs):
         if request.method == "POST":
             token = request.form.get('_csrf_token')
-            app.logger.info(f"CSRF Check: Token received: {bool(token)}")
+            if DEBUG_MODE:
+                app.logger.debug(f"CSRF Check: Token received: {bool(token)}")
             if not token or not validate_csrf_token(token):
                 app.logger.warning(f"CSRF validation failed for {request.path}")
                 flash('Invalid security token. Please try again.', 'error')
                 return redirect(request.url)
-            app.logger.info("CSRF validation passed")
+            if DEBUG_MODE:
+                app.logger.debug("CSRF validation passed")
         return f(*args, **kwargs)
     return decorated_function
 
@@ -263,28 +269,33 @@ def index():
 def send_single():
     """Send a single email receipt with enhanced validation"""
     if request.method == 'POST':
-        app.logger.info("Processing email send request")
+        if DEBUG_MODE:
+            app.logger.debug("Processing email send request")
         try:
             recipient_email = sanitize_input(request.form.get('email', ''))
             recipient_name = sanitize_input(request.form.get('name', ''))
             purchase_date = sanitize_input(request.form.get('purchase_date', ''))
             
-            app.logger.info(f"Form data received - Email: {recipient_email}, Name: {recipient_name}, Date: {purchase_date}")
+            if DEBUG_MODE:
+                app.logger.debug(f"Form data received - Email: {recipient_email}, Name: {recipient_name}, Date: {purchase_date}")
             
             # Validate inputs
             if not all([recipient_email, recipient_name, purchase_date]):
-                app.logger.warning("Missing required fields")
+                if DEBUG_MODE:
+                    app.logger.debug("Missing required fields")
                 flash('All fields are required', 'error')
                 return redirect(url_for('send_single'))
             
             # Validate email format
             if not validate_email(recipient_email):
-                app.logger.warning(f"Invalid email format: {recipient_email}")
+                if DEBUG_MODE:
+                    app.logger.debug(f"Invalid email format: {recipient_email}")
                 flash('Invalid email address format', 'error')
                 return redirect(url_for('send_single'))
             
             # Send email
-            app.logger.info(f"Calling email_service.send_single_receipt for {recipient_email}")
+            if DEBUG_MODE:
+                app.logger.debug(f"Calling email_service.send_single_receipt for {recipient_email}")
             success = email_service.send_single_receipt(
                 recipient_email=recipient_email,
                 recipient_name=recipient_name,
@@ -293,7 +304,8 @@ def send_single():
                 purchase_date=purchase_date
             )
             
-            app.logger.info(f"Email send result: {success}")
+            if DEBUG_MODE:
+                app.logger.debug(f"Email send result: {success}")
             if success:
                 flash(f'Email successfully sent to {recipient_email}', 'success')
             else:
