@@ -16,6 +16,11 @@ from datetime import timedelta, datetime
 from functools import wraps
 import secrets
 
+# Load environment variables from .env file (only if not in Docker)
+if not os.path.exists('/.dockerenv'):
+    from dotenv import load_dotenv
+    load_dotenv()
+
 app = Flask(__name__)
 
 # ============================================
@@ -111,10 +116,18 @@ class User(UserMixin):
 
 # In-memory user store (in production, use a database)
 # Default credentials from environment or default values
+admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
+admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+
+# Debug: Print loaded credentials (only in debug mode)
+if os.environ.get('FLASK_ENV') != 'production':
+    print(f"DEBUG: Loaded admin username: {admin_username}")
+    print(f"DEBUG: Admin password length: {len(admin_password)}")
+
 USERS = {
-    os.environ.get('ADMIN_USERNAME', 'admin'): {
+    admin_username: {
         'id': 1,
-        'password': generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'admin123'))
+        'password': generate_password_hash(admin_password)
     }
 }
 
@@ -194,7 +207,7 @@ def login():
         
         if username in USERS and check_password_hash(USERS[username]['password'], password):
             user = User(USERS[username]['id'], username)
-            login_user(user)
+            login_user(user, remember=True)
             session.permanent = True  # Enable session timeout
             reset_rate_limit(ip_address)  # Reset attempts on success
             flash('Login successful!', 'success')
@@ -207,6 +220,7 @@ def login():
             return redirect(url_for('index'))
         else:
             flash('Invalid username or password', 'error')
+            return render_template('login.html')
     
     return render_template('login.html')
 
@@ -388,7 +402,7 @@ def rate_limit_error(e):
 
 if __name__ == '__main__':
     # Get port from environment variable, default to 5002 for local dev
-    port = int(os.environ.get('FLASK_RUN_PORT', 8080))
+    port = int(os.environ.get('FLASK_RUN_PORT', 5002))
     
     # Production mode check
     if os.environ.get('FLASK_ENV') == 'production':

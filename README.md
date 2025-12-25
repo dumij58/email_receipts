@@ -4,6 +4,7 @@ A professional Flask application for sending email receipts to magazine buyers. 
 
 ## 🚀 Quick Start
 
+### Local Development
 ```bash
 # 1. Clone the repository
 git clone https://github.com/dumij58/email_receipts.git
@@ -13,19 +14,26 @@ cd email_receipts
 cp .env.example .env
 nano .env  # Update with your credentials
 
-# 3. Run security check
-python3 scripts/check_security.py
-
-# 4. Start with Docker (recommended)
-./scripts/docker_deploy.sh start
-
-# Or run locally
+# 3. Install dependencies
 pip install -r requirements.txt
+
+# 4. Run the application
 python3 app.py
 ```
 
-**Access at:** http://localhost:5001  
-**Default login:** admin / admin123 (⚠️ Change in production!)
+**Access at:** http://localhost:5002
+
+### Docker Deployment (Production/Server)
+```bash
+# Quick start
+docker-compose up -d
+
+# Access at: http://your-server:5858
+```
+
+**📖 For server deployment, see [SERVER_DEPLOYMENT.md](SERVER_DEPLOYMENT.md)**
+
+**Default login:** admin / admin123 (⚠️ Change in .env file!)
 
 > 📖 **New to this project?** Start with the [Security Summary](docs/SECURITY_SUMMARY.md) to understand security features.
 
