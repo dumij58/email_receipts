@@ -68,11 +68,16 @@ class EmailService:
         return html_content
     
     def send_email(self, recipient_email, subject, html_content):
-        """Send an email using Brevo API"""
+        """Send an email using Brevo API
+        
+        Returns:
+            tuple: (success: bool, message_id: str, error_message: str)
+        """
         try:
             if not self.api_instance:
-                logger.error("Brevo client not initialized. Check API key.")
-                return False
+                error_msg = "Brevo client not initialized. Check API key."
+                logger.error(error_msg)
+                return (False, None, error_msg)
             
             # Log for debugging
             if DEBUG_MODE:
@@ -91,21 +96,29 @@ class EmailService:
                 logger.debug(f"Sending message via Brevo API...")
             api_response = self.api_instance.send_transac_email(send_smtp_email)
             
+            message_id = api_response.message_id if hasattr(api_response, 'message_id') else None
+            
             if DEBUG_MODE:
-                logger.debug(f"Email sent successfully to {recipient_email} (Message ID: {api_response.message_id})")
-            return True
+                logger.debug(f"Email sent successfully to {recipient_email} (Message ID: {message_id})")
+            return (True, message_id, None)
             
         except ApiException as e:
-            logger.error(f"Brevo API Exception: {e}")
-            return False
+            error_msg = f"Brevo API Exception: {str(e)}"
+            logger.error(error_msg)
+            return (False, None, error_msg)
         except Exception as e:
-            logger.error(f"Failed to send email to {recipient_email}: {str(e)}")
+            error_msg = f"Failed to send email to {recipient_email}: {str(e)}"
+            logger.error(error_msg)
             logger.error(f"Error type: {type(e).__name__}")
-            return False
+            return (False, None, error_msg)
     
     def send_single_receipt(self, recipient_email, recipient_name, magazine_name, 
                           purchase_amount, purchase_date):
-        """Send a single receipt email"""
+        """Send a single receipt email
+        
+        Returns:
+            tuple: (success: bool, message_id: str, error_message: str)
+        """
         subject = f"Receipt for {magazine_name} - {self.sender_name}"
         html_content = self.create_receipt_email(
             recipient_name, magazine_name, purchase_amount, purchase_date
@@ -113,9 +126,14 @@ class EmailService:
         return self.send_email(recipient_email, subject, html_content)
     
     def send_bulk_receipts(self, csv_reader):
-        """Send bulk receipt emails from CSV data"""
+        """Send bulk receipt emails from CSV data
+        
+        Returns:
+            dict: {'success': int, 'failed': int, 'results': list of tuples}
+        """
         success_count = 0
         failed_count = 0
+        results = []  # List of (recipient_email, recipient_name, success, message_id, error_message)
         
         for row in csv_reader:
             try:
@@ -128,12 +146,15 @@ class EmailService:
                     if DEBUG_MODE:
                         logger.debug(f"Skipping row with missing data: {row}")
                     failed_count += 1
+                    results.append((recipient_email, recipient_name, False, None, "Missing required fields"))
                     continue
                 
-                success = self.send_single_receipt(
+                success, message_id, error_message = self.send_single_receipt(
                     recipient_email, recipient_name, self.magazine_name,
                     self.purchase_amount, purchase_date
                 )
+                
+                results.append((recipient_email, recipient_name, success, message_id, error_message))
                 
                 if success:
                     success_count += 1
@@ -141,9 +162,11 @@ class EmailService:
                     failed_count += 1
                     
             except Exception as e:
-                logger.error(f"Error processing row: {str(e)}")
+                error_msg = f"Error processing row: {str(e)}"
+                logger.error(error_msg)
                 failed_count += 1
+                results.append((recipient_email, recipient_name, False, None, error_msg))
         
         if DEBUG_MODE:
             logger.debug(f"Bulk send completed: {success_count} success, {failed_count} failed")
-        return {'success': success_count, 'failed': failed_count}
+        return {'success': success_count, 'failed': failed_count, 'results': results}

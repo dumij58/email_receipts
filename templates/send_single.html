@@ -20,7 +20,7 @@
         font-weight: 500;
     }
     
-    .form-group input {
+    .form-group input, .form-group select {
         width: 100%;
         padding: 12px;
         border: 1px solid #ddd;
@@ -29,7 +29,7 @@
         transition: border-color 0.3s;
     }
     
-    .form-group input:focus {
+    .form-group input:focus, .form-group select:focus {
         outline: none;
         border-color: #3e1c68;
     }
@@ -59,6 +59,18 @@
         color: #666;
         margin-top: 5px;
     }
+    
+    .digital-fields {
+        display: none;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 5px;
+        margin-top: 10px;
+    }
+    
+    .digital-fields.show {
+        display: block;
+    }
 </style>
 {% endblock %}
 
@@ -84,7 +96,63 @@
             <input type="date" id="purchase_date" name="purchase_date" required>
         </div>
         
+        <div class="form-group">
+            <label for="edition">Edition *</label>
+            <select id="edition" name="edition" required>
+                <option value="print">Print</option>
+                <option value="digital">Digital</option>
+            </select>
+        </div>
+        
+        <div id="digital-fields" class="digital-fields">
+            <div class="form-group">
+                <label for="digital_link">Digital Access Link *</label>
+                <input type="url" id="digital_link" name="digital_link" placeholder="https://example.com/access">
+                <div class="form-help">URL where customer can access digital content</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="digital_username">Username *</label>
+                <input type="text" id="digital_username" name="digital_username" placeholder="username">
+                <div class="form-help">Login username for digital access</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="digital_password">Password *</label>
+                <input type="text" id="digital_password" name="digital_password" placeholder="password">
+                <div class="form-help">Login password for digital access</div>
+            </div>
+        </div>
+        
         <button type="submit" class="btn">Send Email Receipt</button>
     </form>
 </div>
+
+<script>
+    // Toggle digital fields based on edition selection
+    const editionSelect = document.getElementById('edition');
+    const digitalFields = document.getElementById('digital-fields');
+    const digitalInputs = digitalFields.querySelectorAll('input');
+    
+    function toggleDigitalFields() {
+        if (editionSelect.value === 'digital') {
+            digitalFields.classList.add('show');
+            // Make digital fields required
+            digitalInputs.forEach(input => input.required = true);
+        } else {
+            digitalFields.classList.remove('show');
+            // Remove required from digital fields
+            digitalInputs.forEach(input => {
+                input.required = false;
+                input.value = ''; // Clear values
+            });
+        }
+    }
+    
+    // Initial check
+    toggleDigitalFields();
+    
+    // Listen for changes
+    editionSelect.addEventListener('change', toggleDigitalFields);
+</script>
 {% endblock %}

@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Sent Emails - Email Receipts{% endblock %}
+
+{% block content %}
+<h2>📧 Sent Emails</h2>
+<p>View and filter all sent email receipts with transaction details.</p>
+
+<div class="filter-section" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+    <h3 style="margin-top: 0;">Filters</h3>
+    <form method="get" action="{{ url_for('sent_emails') }}" style="display: grid; gap: 15px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+            <div>
+                <label for="status" style="display: block; margin-bottom: 5px; font-weight: bold;">Status</label>
+                <select name="status" id="status" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                    <option value="">All</option>
+                    <option value="success" {% if status_filter == 'success' %}selected{% endif %}>Success</option>
+                    <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="date_from" style="display: block; margin-bottom: 5px; font-weight: bold;">Date From</label>
+                <input type="date" name="date_from" id="date_from" value="{{ date_from }}" 
+                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+            </div>
+            
+            <div>
+                <label for="date_to" style="display: block; margin-bottom: 5px; font-weight: bold;">Date To</label>
+                <input type="date" name="date_to" id="date_to" value="{{ date_to }}" 
+                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+            </div>
+            
+            <div>
+                <label for="search" style="display: block; margin-bottom: 5px; font-weight: bold;">Search</label>
+                <input type="text" name="search" id="search" value="{{ search }}" 
+                       placeholder="Email or Name" 
+                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+            </div>
+            
+            <div>
+                <label for="per_page" style="display: block; margin-bottom: 5px; font-weight: bold;">Per Page</label>
+                <select name="per_page" id="per_page" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                    <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                    <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                </select>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-primary" style="padding: 10px 20px; background: #3e1c68; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                Apply Filters
+            </button>
+            <a href="{{ url_for('sent_emails') }}" class="btn btn-secondary" 
+               style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; text-decoration: none; display: inline-block;">
+                Clear Filters
+            </a>
+            <a href="{{ url_for('export_sent_emails', status=status_filter, date_from=date_from, date_to=date_to, search=search) }}" 
+               class="btn btn-success" 
+               style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; text-decoration: none; display: inline-block; margin-left: auto;">
+                📥 Export to CSV
+            </a>
+        </div>
+    </form>
+</div>
+
+{% if emails %}
+<div style="margin: 20px 0;">
+    <p><strong>Total Results:</strong> {{ pagination.total }} emails</p>
+</div>
+
+<div style="overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <thead>
+            <tr style="background: #3e1c68; color: white;">
+                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">ID</th>
+                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Recipient Email</th>
+                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Recipient Name</th>
+                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Edition</th>
+                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Purchase Date</th>
+                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Transaction ID</th>
+                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Sent At</th>
+                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Status</th>
+                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Digital Access</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for email in emails %}
+            <tr style="border-bottom: 1px solid #eee; {% if loop.index % 2 == 0 %}background: #f8f9fa;{% endif %}">
+                <td style="padding: 12px;">{{ email.id }}</td>
+                <td style="padding: 12px;">{{ email.recipient_email }}</td>
+                <td style="padding: 12px;">{{ email.recipient_name }}</td>
+                <td style="padding: 12px;">
+                    {% if email.edition == 'digital' %}
+                        <span style="background: #cfe2ff; color: #084298; padding: 3px 8px; border-radius: 4px; font-size: 12px;">📱 Digital</span>
+                    {% else %}
+                        <span style="background: #f8f9fa; color: #495057; padding: 3px 8px; border-radius: 4px; font-size: 12px;">📰 Print</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 12px;">{{ email.purchase_date }}</td>
+                <td style="padding: 12px; font-family: monospace; font-size: 11px;">
+                    {% if email.transaction_id %}
+                        {{ email.transaction_id }}
+                    {% else %}
+                        <span style="color: #999;">N/A</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 12px;">{{ email.sent_at.strftime('%Y-%m-%d %H:%M:%S') if email.sent_at else 'N/A' }}</td>
+                <td style="padding: 12px; text-align: center; font-size: 20px;">
+                    {% if email.status == 'success' %}
+                        <span style="color: #28a745;" title="Success">✓</span>
+                    {% else %}
+                        <span style="color: #dc3545;" title="Failed">✗</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 12px;">
+                    {% if email.edition == 'digital' and email.digital_link %}
+                        <button onclick="toggleDigitalDetails({{ email.id }})" 
+                                style="background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                            Show Details
+                        </button>
+                    {% else %}
+                        <span style="color: #999; font-size: 12px;">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% if email.edition == 'digital' %}
+            <tr id="digital-{{ email.id }}" style="display: none; border-bottom: 1px solid #eee; background: #e7f3ff;">
+                <td colspan="9" style="padding: 12px; font-size: 12px;">
+                    <strong style="color: #004085;">Digital Access Details:</strong><br>
+                    <div style="margin-top: 8px; display: grid; gap: 5px;">
+                        <div><strong>Link:</strong> <a href="{{ email.digital_link }}" target="_blank" style="color: #007bff;">{{ email.digital_link }}</a></div>
+                        <div><strong>Username:</strong> <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px;">{{ email.digital_username }}</code></div>
+                        <div><strong>Password:</strong> <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px;">{{ email.digital_password }}</code></div>
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
+            {% if email.error_message %}
+            <tr style="border-bottom: 1px solid #eee; background: #fff3cd;">
+                <td colspan="9" style="padding: 8px 12px; font-size: 12px; color: #856404;">
+                    <strong>Error:</strong> {{ email.error_message }}
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+function toggleDigitalDetails(emailId) {
+    const row = document.getElementById('digital-' + emailId);
+    if (row.style.display === 'none') {
+        row.style.display = 'table-row';
+    } else {
+        row.style.display = 'none';
+    }
+}
+</script>
+
+<!-- Pagination -->
+<div style="margin: 30px 0; display: flex; justify-content: center; align-items: center; gap: 10px;">
+    {% if pagination.has_prev %}
+        <a href="{{ url_for('sent_emails', page=pagination.prev_num, per_page=per_page, status=status_filter, date_from=date_from, date_to=date_to, search=search) }}" 
+           style="padding: 8px 16px; background: #3e1c68; color: white; text-decoration: none; border-radius: 5px;">
+            « Previous
+        </a>
+    {% else %}
+        <span style="padding: 8px 16px; background: #ccc; color: #666; border-radius: 5px;">« Previous</span>
+    {% endif %}
+    
+    <span style="padding: 8px 16px; background: #f8f9fa; border-radius: 5px;">
+        Page {{ pagination.page }} of {{ pagination.pages }}
+    </span>
+    
+    {% if pagination.has_next %}
+        <a href="{{ url_for('sent_emails', page=pagination.next_num, per_page=per_page, status=status_filter, date_from=date_from, date_to=date_to, search=search) }}" 
+           style="padding: 8px 16px; background: #3e1c68; color: white; text-decoration: none; border-radius: 5px;">
+            Next »
+        </a>
+    {% else %}
+        <span style="padding: 8px 16px; background: #ccc; color: #666; border-radius: 5px;">Next »</span>
+    {% endif %}
+</div>
+
+{% else %}
+<div style="background: #fff3cd; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+    <p style="margin: 0; color: #856404;">📭 No sent emails found matching your filters.</p>
+</div>
+{% endif %}
+
+<div style="margin-top: 30px; padding: 15px; background: #e7f3ff; border-radius: 8px;">
+    <p style="margin: 0; color: #004085;">
+        <strong>💡 Tip:</strong> Use the filters above to search for specific emails, date ranges, or view only successful/failed sends. 
+        Export filtered results to CSV for record keeping.
+    </p>
+</div>
+{% endblock %}

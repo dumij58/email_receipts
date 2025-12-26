@@ -21,8 +21,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application files
 COPY . .
 
-# Create logs directory
-RUN mkdir -p /app/logs
+# Create logs and data directories
+RUN mkdir -p /app/logs /app/data
 
 # Create a non-root user
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
@@ -38,5 +38,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Set environment variable for Flask port
 ENV FLASK_RUN_PORT=8080
 
-# Run the application
-CMD ["python", "app.py"]
+# Run database initialization and then the application
+CMD python scripts/init_db.py && python app.py

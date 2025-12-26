@@ -39,11 +39,16 @@ docker compose up -d
 
 ## Features
 
-- 🔐 **User Authentication**: Secure login system to protect the application
+- 🔐 **User Authentication**: Secure login system with database-backed user management
+- 📊 **Email Tracking**: Track all sent emails with transaction IDs and status
 - 📧 **Single Email Sending**: Send individual receipts with custom details
 - 📬 **Bulk Email Sending**: Upload CSV files to send receipts to multiple customers
+- 📈 **Sent Emails Dashboard**: View, filter, and export email history
+- 🔍 **Advanced Filtering**: Filter by status, date range, and search recipients
+- 📥 **CSV Export**: Export filtered email logs for record keeping
 - 🎨 **Clean Web Interface**: Modern, responsive UI built with HTML/CSS
 - 🔒 **Secure Configuration**: Environment-based API credentials
+- 🗄️ **Database Support**: SQLite for development, PostgreSQL for production
 - 🐳 **Docker Support**: Fully containerized with Docker and docker compose
 - 📊 **API Endpoints**: RESTful API for programmatic access
 - ✅ **Professional Templates**: HTML email templates with receipt details
@@ -55,25 +60,31 @@ email-receipts/
 ├── app.py                  # Main Flask application with authentication
 ├── app_basic.py           # Basic version (backup)
 ├── email_service.py        # Email sending logic
+├── models.py              # Database models (User, SentEmail)
 ├── templates/              # HTML templates
-│   ├── base.html          # Base template with logout button
+│   ├── base.html          # Base template with navigation
 │   ├── index.html         # Dashboard
 │   ├── login.html         # Login page
 │   ├── send_single.html   # Single email form
-│   └── send_bulk.html     # Bulk email form
+│   ├── send_bulk.html     # Bulk email form
+│   └── sent_emails.html   # Email history viewer
+├── data/                   # Database files (SQLite, local dev)
 ├── docs/                   # Documentation
+│   ├── DATABASE.md        # Database implementation guide
+│   ├── MIGRATION_GUIDE.md # Migration instructions
 │   ├── LOGIN_FEATURE.md
 │   ├── SECURITY_SUMMARY.md
 │   ├── SECURITY_RECOMMENDATIONS.md
 │   ├── DOCKER_DEPLOYMENT.md
 │   └── DOCKER_UPDATE_SUMMARY.md
 ├── scripts/                # Utility scripts
+│   ├── init_db.py         # Database initialization
 │   ├── check_security.py
 │   ├── setup_credentials.sh
 │   └── docker_deploy.sh
 ├── requirements.txt        # Python dependencies
 ├── Dockerfile             # Docker configuration
-├── docker-compose.yml     # Docker Compose configuration
+├── docker-compose.yml     # Docker Compose configuration (with PostgreSQL)
 ├── .env.example           # Environment variables template
 ├── .gitignore            # Git ignore file
 └── README.md             # This file
@@ -126,13 +137,21 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+#### Initialize Database
+
+```bash
+python scripts/init_db.py
+```
+
+This will create the SQLite database and set up the default admin user from your `.env` credentials.
+
 #### Run the Application
 
 ```bash
 python app.py
 ```
 
-Visit: http://localhost:5000
+Visit: http://localhost:5002
 
 ### 4. Docker Deployment
 
@@ -142,7 +161,12 @@ Visit: http://localhost:5000
 docker compose up -d
 ```
 
-The application will be available at: http://localhost:5000
+The application will be available at: http://localhost:5858
+
+Docker deployment includes:
+- **Web Application**: Flask app with Gunicorn
+- **PostgreSQL Database**: Persistent storage for users and email logs
+- **Automatic Initialization**: Database tables and admin user created on first run
 
 #### Stop the Application
 
@@ -176,11 +200,28 @@ When you first access the application, you'll be redirected to the login page.
 
 ### Web Interface
 
-1. **Login Page** (`/login`): Secure authentication
+1. **Login Page** (`/login`): Secure authentication with database-backed users
 2. **Dashboard** (`/`): Overview and navigation (requires login)
 3. **Send Single Email** (`/send-single`): Form for individual receipts (requires login)
 4. **Send Bulk Emails** (`/send-bulk`): CSV upload for batch sending (requires login)
-5. **Logout**: Click the red "Logout" button in the navigation bar
+5. **Sent Emails** (`/sent-emails`): View email history with filtering and export (requires login)
+6. **Logout**: Click the red "Logout" button in the navigation bar
+
+### Sent Emails Dashboard
+
+The new **Sent Emails** page provides comprehensive email tracking:
+
+**Features:**
+- View all sent email receipts with full details
+- Filter by status (success/failed)
+- Filter by date range (from/to)
+- Search by recipient email or name
+- Adjustable pagination (20/50/100 per page)
+- Export filtered results to CSV
+- View Brevo message IDs for delivery tracking
+- See error messages for failed sends
+
+**Access:** Navigate to "Sent Emails" in the top menu after logging in.
 
 ### CSV File Format for Bulk Sending
 
@@ -262,6 +303,7 @@ http://your-server-ip:5000
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `SECRET_KEY` | Flask secret key | Required |
+| `DATABASE_URL` | PostgreSQL connection (Docker only) | Auto-configured |
 | `BREVO_API_KEY` | Brevo API key for email service | Required |
 | `SENDER_EMAIL` | Sender email address (must be verified in Brevo) | Required |
 | `SENDER_NAME` | Sender display name | Magazine Store |
@@ -269,8 +311,16 @@ http://your-server-ip:5000
 | `PURCHASE_AMOUNT` | Default purchase amount | 1000.00 |
 | `ADMIN_USERNAME` | Admin login username | admin |
 | `ADMIN_PASSWORD` | Admin login password | admin123 |
+| `ADMIN_EMAIL` | Admin email address (optional) | - |
 
 ## Troubleshooting
+
+### Database Issues
+
+1. **"No such table: users"**: Run `python scripts/init_db.py` to initialize the database
+2. **Can't login after setup**: Verify admin credentials in `.env` and reinitialize database
+3. **Database locked (SQLite)**: Only one process can write at a time; restart the application
+4. **PostgreSQL connection failed (Docker)**: Check database container with `docker compose logs db`
 
 ### Email Not Sending
 
@@ -278,33 +328,40 @@ http://your-server-ip:5000
 2. **Verify sender email**: Make sure your sender email is verified in Brevo dashboard
 3. **Check API limits**: Free tier allows 300 emails/day
 4. **Check logs**: `docker compose logs -f` to see error messages
+5. **Check Sent Emails page**: View status and error messages for failed sends
 
 ### Docker Issues
 
 1. **Port already in use**: Change port in `docker-compose.yml`
 2. **Build fails**: Run `docker compose build --no-cache`
 3. **Container won't start**: Check logs with `docker compose logs`
+4. **Database not initializing**: Check `docker compose logs web` for initialization errors
 
 ## Security Notes
 
 - ✅ **Login Required**: All routes except `/login` require authentication
+- 🗄️ **Database-Backed Users**: User credentials stored securely in database with hashed passwords
 - 🔐 **Change Default Credentials**: Update `ADMIN_USERNAME` and `ADMIN_PASSWORD` in `.env`
 - 🔑 Never commit `.env` file to version control (already in `.gitignore`)
 - 🔒 Use strong secret keys and passwords in production
 - 🔐 Keep your Brevo API key secure and never expose it publicly
-- ⚡ Implement rate limiting for production use
+- ⚡ Rate limiting implemented for login attempts (5 attempts per 5 minutes)
 - 🛡️ Use HTTPS in production to protect login credentials in transit
+- 📊 **Audit Trail**: All sent emails tracked with sender identification
 
-### Adding More Users
+### Managing Users
 
-Currently, the app uses a simple in-memory user store. To add more users:
+The application uses a database-backed authentication system. Users are stored in the database with secure password hashing.
 
-1. Edit `app.py` and add users to the `USERS` dictionary
-2. For production, consider implementing a database-backed user system
+**Adding New Admin Users**: See [DATABASE.md](docs/DATABASE.md) for instructions on adding additional admin users programmatically.
+
+**For Existing Installations**: If upgrading from a previous version, see [MIGRATION_GUIDE.md](docs/MIGRATION_GUIDE.md) for migration instructions.
 
 ## 📚 Documentation
 
 ### Quick Reference
+- **[Database Implementation Guide](docs/DATABASE.md)** - Complete database documentation
+- **[Migration Guide](docs/MIGRATION_GUIDE.md)** - Upgrade instructions for existing installations
 - **[Scripts Guide](scripts/README.md)** - Utility scripts documentation
 - **[Login Feature Guide](docs/LOGIN_FEATURE.md)** - Authentication system documentation
 - **[Security Summary](docs/SECURITY_SUMMARY.md)** - Security overview and quick reference

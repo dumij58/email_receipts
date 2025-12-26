@@ -4,9 +4,11 @@ This file demonstrates additional security features for production use.
 To use this version, rename it to app.py (backup the original first).
 """
 
-from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, session, send_file
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_migrate import Migrate
 from email_service import EmailService
+from models import db, User, SentEmail
 import os
 import csv
 import logging
@@ -40,6 +42,36 @@ app.logger.setLevel(log_level)
 
 if DEBUG_MODE:
     app.logger.debug(f"Loaded .env file for local development" if not is_docker else "Running in Docker - using environment variables from docker-compose")
+
+# ============================================
+# DATABASE CONFIGURATION
+# ============================================
+
+# Auto-detect database: SQLite for development, PostgreSQL for production
+if os.environ.get('DATABASE_URL'):
+    # PostgreSQL (production)
+    database_url = os.environ.get('DATABASE_URL')
+    # Handle postgres:// vs postgresql:// (required for SQLAlchemy 1.4+)
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    app.logger.info("Using PostgreSQL database")
+else:
+    # SQLite (development)
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'email_receipts.db')
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+    app.logger.info(f"Using SQLite database at {db_path}")
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_pre_ping': True,  # Verify connections before using
+    'pool_recycle': 300,    # Recycle connections after 5 minutes
+}
+
+# Initialize database and migrations
+db.init_app(app)
+migrate = Migrate(app, db)
 
 # ============================================
 # ENHANCED SECURITY CONFIGURATION
@@ -89,6 +121,24 @@ magazine_name = email_service.magazine_name
 purchase_amount = email_service.purchase_amount
 
 # ============================================
+# HELPER FUNCTIONS
+# ============================================
+
+def extract_transaction_id(message_id):
+    """Extract transaction ID from Brevo message_id format: <[transaction_id]@smtp-relay.mailin.fr>"""
+    if not message_id:
+        return None
+    try:
+        # Format: <[transaction_id]@smtp-relay.mailin.fr>
+        if message_id.startswith('<') and '@' in message_id:
+            # Remove < and split by @
+            transaction_part = message_id[1:].split('@')[0]
+            return transaction_part
+        return message_id
+    except Exception:
+        return message_id
+
+# ============================================
 # RATE LIMITING & BRUTE FORCE PROTECTION
 # ============================================
 
@@ -128,34 +178,12 @@ def reset_rate_limit(ip_address):
 # USER MODEL & AUTHENTICATION
 # ============================================
 
-class User(UserMixin):
-    def __init__(self, id, username):
-        self.id = id
-        self.username = username
-
-# In-memory user store (in production, use a database)
-# Default credentials from environment or default values
-admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
-admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
-
-# Debug: Print loaded credentials (only in debug mode)
-if os.environ.get('FLASK_ENV') != 'production':
-    print(f"DEBUG: Loaded admin username: {admin_username}")
-    print(f"DEBUG: Admin password length: {len(admin_password)}")
-
-USERS = {
-    admin_username: {
-        'id': 1,
-        'password': generate_password_hash(admin_password)
-    }
-}
+# Note: User model is now defined in models.py and uses the database
 
 @login_manager.user_loader
 def load_user(user_id):
-    for username, user_data in USERS.items():
-        if user_data['id'] == int(user_id):
-            return User(user_data['id'], username)
-    return None
+    """Load user from database by ID"""
+    return db.session.get(User, int(user_id))
 
 # ============================================
 # CSRF PROTECTION
@@ -229,8 +257,15 @@ def login():
         username = sanitize_input(request.form.get('username', ''), 100)
         password = request.form.get('password', '')
         
-        if username in USERS and check_password_hash(USERS[username]['password'], password):
-            user = User(USERS[username]['id'], username)
+        # Query user from database
+        user = User.query.filter_by(username=username, is_active=True).first()
+        
+        if user and check_password_hash(user.password_hash, password):
+            # Update last login timestamp
+            from datetime import timezone
+            user.last_login = datetime.now(timezone.utc)
+            db.session.commit()
+            
             login_user(user, remember=True)
             session.permanent = True  # Enable session timeout
             reset_rate_limit(ip_address)  # Reset attempts on success
@@ -275,15 +310,31 @@ def send_single():
             recipient_email = sanitize_input(request.form.get('email', ''))
             recipient_name = sanitize_input(request.form.get('name', ''))
             purchase_date = sanitize_input(request.form.get('purchase_date', ''))
+            edition = sanitize_input(request.form.get('edition', ''))
+            
+            # Digital edition fields (only if edition is digital)
+            digital_link = sanitize_input(request.form.get('digital_link', '')) if edition == 'digital' else None
+            digital_username = sanitize_input(request.form.get('digital_username', '')) if edition == 'digital' else None
+            digital_password = sanitize_input(request.form.get('digital_password', '')) if edition == 'digital' else None
             
             if DEBUG_MODE:
-                app.logger.debug(f"Form data received - Email: {recipient_email}, Name: {recipient_name}, Date: {purchase_date}")
+                app.logger.debug(f"Form data received - Email: {recipient_email}, Name: {recipient_name}, Date: {purchase_date}, Edition: {edition}")
             
             # Validate inputs
-            if not all([recipient_email, recipient_name, purchase_date]):
+            if not all([recipient_email, recipient_name, purchase_date, edition]):
                 if DEBUG_MODE:
                     app.logger.debug("Missing required fields")
-                flash('All fields are required', 'error')
+                flash('All required fields must be filled', 'error')
+                return redirect(url_for('send_single'))
+            
+            # Validate edition
+            if edition not in ['digital', 'print']:
+                flash('Invalid edition type', 'error')
+                return redirect(url_for('send_single'))
+            
+            # Validate digital fields if digital edition
+            if edition == 'digital' and not all([digital_link, digital_username, digital_password]):
+                flash('Digital edition requires link, username, and password', 'error')
                 return redirect(url_for('send_single'))
             
             # Validate email format
@@ -296,13 +347,42 @@ def send_single():
             # Send email
             if DEBUG_MODE:
                 app.logger.debug(f"Calling email_service.send_single_receipt for {recipient_email}")
-            success = email_service.send_single_receipt(
+            success, message_id, error_message = email_service.send_single_receipt(
                 recipient_email=recipient_email,
                 recipient_name=recipient_name,
                 magazine_name=magazine_name,
                 purchase_amount=purchase_amount,
                 purchase_date=purchase_date
             )
+            
+            # Extract transaction ID from message_id
+            transaction_id = extract_transaction_id(message_id)
+            
+            # Log email to database
+            try:
+                from datetime import timezone
+                sent_email = SentEmail(
+                    user_id=current_user.id,
+                    recipient_email=recipient_email,
+                    recipient_name=recipient_name,
+                    purchase_date=purchase_date,
+                    edition=edition,
+                    digital_link=digital_link,
+                    digital_username=digital_username,
+                    digital_password=digital_password,
+                    sent_at=datetime.now(timezone.utc),
+                    transaction_id=transaction_id,
+                    message_id=message_id,
+                    status='success' if success else 'failed',
+                    error_message=error_message
+                )
+                db.session.add(sent_email)
+                db.session.commit()
+                if DEBUG_MODE:
+                    app.logger.debug(f"Email transaction logged to database (ID: {sent_email.id})")
+            except Exception as e:
+                app.logger.error(f"Failed to log email to database: {str(e)}")
+                db.session.rollback()
             
             if DEBUG_MODE:
                 app.logger.debug(f"Email send result: {success}")
@@ -314,7 +394,6 @@ def send_single():
         except Exception as e:
             # Log error but don't expose details to user
             app.logger.error(f'Error sending email: {str(e)}', exc_info=True)
-            flash('An error occurred while sending the email.', 'error')
             flash('An error occurred while sending the email.', 'error')
             
         return redirect(url_for('send_single'))
@@ -356,8 +435,61 @@ def send_bulk():
             
             csv_reader = csv.DictReader(StringIO(csv_content))
             
-            # Process bulk emails
+            # Parse CSV rows and store data for database logging
+            recipients = []
+            for row in csv_reader:
+                edition = row.get('edition', 'print').lower()
+                # Validate edition
+                if edition not in ['digital', 'print']:
+                    edition = 'print'
+                
+                recipient_data = {
+                    'email': row.get('email'),
+                    'name': row.get('name'),
+                    'purchase_date': row.get('purchase_date'),
+                    'edition': edition,
+                    'digital_link': row.get('link', '') if edition == 'digital' else None,
+                    'digital_username': row.get('username', '') if edition == 'digital' else None,
+                    'digital_password': row.get('password', '') if edition == 'digital' else None
+                }
+                recipients.append(recipient_data)
+            
+            # Process bulk emails (use original email_service logic)
+            csv_reader = csv.DictReader(StringIO(csv_content))
             results = email_service.send_bulk_receipts(csv_reader)
+            
+            # Log all emails to database
+            try:
+                from datetime import timezone
+                for i, (recipient_email, recipient_name, success, message_id, error_message) in enumerate(results['results']):
+                    # Get corresponding recipient data
+                    recipient_data = recipients[i] if i < len(recipients) else {}
+                    
+                    # Extract transaction ID from message_id
+                    transaction_id = extract_transaction_id(message_id)
+                    
+                    sent_email = SentEmail(
+                        user_id=current_user.id,
+                        recipient_email=recipient_email,
+                        recipient_name=recipient_name,
+                        purchase_date=recipient_data.get('purchase_date', datetime.now(timezone.utc).strftime('%Y-%m-%d')),
+                        edition=recipient_data.get('edition', 'print'),
+                        digital_link=recipient_data.get('digital_link'),
+                        digital_username=recipient_data.get('digital_username'),
+                        digital_password=recipient_data.get('digital_password'),
+                        sent_at=datetime.now(timezone.utc),
+                        transaction_id=transaction_id,
+                        message_id=message_id,
+                        status='success' if success else 'failed',
+                        error_message=error_message
+                    )
+                    db.session.add(sent_email)
+                db.session.commit()
+                if DEBUG_MODE:
+                    app.logger.debug(f"Logged {len(results['results'])} email transactions to database")
+            except Exception as e:
+                app.logger.error(f"Failed to log bulk emails to database: {str(e)}")
+                db.session.rollback()
             
             flash(f'Bulk email completed: {results["success"]} sent, {results["failed"]} failed', 
                   'success' if results["failed"] == 0 else 'warning')
@@ -369,6 +501,163 @@ def send_bulk():
         return redirect(url_for('send_bulk'))
     
     return render_template('send_bulk.html')
+
+@app.route('/sent-emails')
+@login_required
+def sent_emails():
+    """View sent emails with pagination and filtering"""
+    # Get query parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    status_filter = request.args.get('status', '')
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    search = request.args.get('search', '')
+    
+    # Validate per_page options
+    if per_page not in [20, 50, 100]:
+        per_page = 20
+    
+    # Build query
+    query = SentEmail.query
+    
+    # Apply filters
+    if status_filter:
+        query = query.filter(SentEmail.status == status_filter)
+    
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+            query = query.filter(SentEmail.sent_at >= date_from_obj)
+        except ValueError:
+            flash('Invalid date format for date_from', 'error')
+    
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
+            # Add one day to include the entire end date
+            date_to_obj = date_to_obj.replace(hour=23, minute=59, second=59)
+            query = query.filter(SentEmail.sent_at <= date_to_obj)
+        except ValueError:
+            flash('Invalid date format for date_to', 'error')
+    
+    if search:
+        search_pattern = f'%{search}%'
+        query = query.filter(
+            db.or_(
+                SentEmail.recipient_email.ilike(search_pattern),
+                SentEmail.recipient_name.ilike(search_pattern)
+            )
+        )
+    
+    # Order by sent_at descending (most recent first)
+    query = query.order_by(SentEmail.sent_at.desc())
+    
+    # Paginate results
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    
+    return render_template('sent_emails.html',
+                         emails=pagination.items,
+                         pagination=pagination,
+                         status_filter=status_filter,
+                         date_from=date_from,
+                         date_to=date_to,
+                         search=search,
+                         per_page=per_page)
+
+@app.route('/sent-emails/export')
+@login_required
+def export_sent_emails():
+    """Export sent emails to CSV with applied filters"""
+    # Get same filters as sent_emails view
+    status_filter = request.args.get('status', '')
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    search = request.args.get('search', '')
+    
+    # Build query with same filters
+    query = SentEmail.query
+    
+    if status_filter:
+        query = query.filter(SentEmail.status == status_filter)
+    
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+            query = query.filter(SentEmail.sent_at >= date_from_obj)
+        except ValueError:
+            pass
+    
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
+            date_to_obj = date_to_obj.replace(hour=23, minute=59, second=59)
+            query = query.filter(SentEmail.sent_at <= date_to_obj)
+        except ValueError:
+            pass
+    
+    if search:
+        search_pattern = f'%{search}%'
+        query = query.filter(
+            db.or_(
+                SentEmail.recipient_email.ilike(search_pattern),
+                SentEmail.recipient_name.ilike(search_pattern)
+            )
+        )
+    
+    # Order by sent_at descending
+    query = query.order_by(SentEmail.sent_at.desc())
+    
+    # Get all results (be careful with large datasets)
+    emails = query.all()
+    
+    # Create CSV in memory
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    writer.writerow([
+        'ID', 'Recipient Email', 'Recipient Name', 'Purchase Date', 'Edition',
+        'Transaction ID', 'Sent At', 'Status', 'Error Message', 'Sent By',
+        'Digital Link', 'Digital Username', 'Digital Password'
+    ])
+    
+    # Write data rows
+    for email in emails:
+        email_dict = email.to_dict()
+        writer.writerow([
+            email_dict['id'],
+            email_dict['recipient_email'],
+            email_dict['recipient_name'],
+            email_dict['purchase_date'],
+            email_dict['edition'],
+            email_dict['transaction_id'],
+            email_dict['sent_at'],
+            email_dict['status'],
+            email_dict['error_message'],
+            email_dict['sent_by'],
+            email_dict.get('digital_link', ''),
+            email_dict.get('digital_username', ''),
+            email_dict.get('digital_password', '')
+        ])
+    
+    # Prepare response
+    output.seek(0)
+    
+    from io import BytesIO
+    from datetime import timezone
+    
+    # Create BytesIO from string
+    byte_output = BytesIO()
+    byte_output.write(output.getvalue().encode('utf-8'))
+    byte_output.seek(0)
+    
+    return send_file(
+        byte_output,
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name=f'sent_emails_{datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")}.csv'
+    )
 
 @app.route('/api/health')
 def health_check():
@@ -394,7 +683,6 @@ def email_config():
 
 @app.route('/api/send-email', methods=['POST'])
 @login_required
-@login_required
 def api_send_email():
     """API endpoint for sending single email with enhanced validation"""
     try:
@@ -403,9 +691,19 @@ def api_send_email():
         if not data:
             return jsonify({'error': 'Invalid JSON'}), 400
         
-        required_fields = ['email', 'name', 'magazine_name', 'purchase_amount', 'purchase_date']
+        required_fields = ['email', 'name', 'purchase_date', 'edition']
         if not all(field in data for field in required_fields):
             return jsonify({'error': 'Missing required fields'}), 400
+        
+        # Validate edition
+        edition = data.get('edition', 'print').lower()
+        if edition not in ['digital', 'print']:
+            return jsonify({'error': 'Invalid edition type'}), 400
+        
+        # Validate digital fields if digital edition
+        if edition == 'digital':
+            if not all(field in data for field in ['digital_link', 'digital_username', 'digital_password']):
+                return jsonify({'error': 'Digital edition requires link, username, and password'}), 400
         
         # Validate email
         if not validate_email(data['email']):
@@ -414,19 +712,50 @@ def api_send_email():
         # Sanitize inputs
         recipient_email = sanitize_input(data['email'])
         recipient_name = sanitize_input(data['name'])
+        purchase_date = sanitize_input(data['purchase_date'])
+        digital_link = sanitize_input(data.get('digital_link', '')) if edition == 'digital' else None
+        digital_username = sanitize_input(data.get('digital_username', '')) if edition == 'digital' else None
+        digital_password = sanitize_input(data.get('digital_password', '')) if edition == 'digital' else None
         
-        success = email_service.send_single_receipt(
+        success, message_id, error_message = email_service.send_single_receipt(
             recipient_email=recipient_email,
             recipient_name=recipient_name,
-            magazine_name=data['magazine_name'],
-            purchase_amount=data['purchase_amount'],
-            purchase_date=data['purchase_date']
+            magazine_name=magazine_name,
+            purchase_amount=purchase_amount,
+            purchase_date=purchase_date
         )
         
+        # Extract transaction ID from message_id
+        transaction_id = extract_transaction_id(message_id)
+        
+        # Log email to database
+        try:
+            from datetime import timezone
+            sent_email = SentEmail(
+                user_id=current_user.id,
+                recipient_email=recipient_email,
+                recipient_name=recipient_name,
+                purchase_date=purchase_date,
+                edition=edition,
+                digital_link=digital_link,
+                digital_username=digital_username,
+                digital_password=digital_password,
+                sent_at=datetime.now(timezone.utc),
+                transaction_id=transaction_id,
+                message_id=message_id,
+                status='success' if success else 'failed',
+                error_message=error_message
+            )
+            db.session.add(sent_email)
+            db.session.commit()
+        except Exception as e:
+            app.logger.error(f"Failed to log email to database: {str(e)}")
+            db.session.rollback()
+        
         if success:
-            return jsonify({'message': 'Email sent successfully'}), 200
+            return jsonify({'message': 'Email sent successfully', 'message_id': message_id}), 200
         else:
-            return jsonify({'error': 'Failed to send email'}), 500
+            return jsonify({'error': 'Failed to send email', 'details': error_message}), 500
             
     except Exception as e:
         app.logger.error(f'API error: {str(e)}')

@@ -126,19 +126,33 @@
         <h3>📋 CSV File Format</h3>
         <p style="margin-bottom: 15px;">Your CSV file should have the following columns:</p>
         <code>
-            email,name,purchase_date<br>
-            john@example.com,John Doe,2025-01-15<br>
-            jane@example.com,Jane Smith,2025-01-14
+            email,name,purchase_date,edition,link,username,password<br>
+            john@example.com,John Doe,2025-01-15,print,,,<br>
+            jane@example.com,Jane Smith,2025-01-14,digital,https://example.com/access,janesmith,pass123
         </code>
         
         <p style="margin-top: 15px; color: #666;">
             <strong>Required columns:</strong>
         </p>
         <ul style="margin-left: 20px;">
-            <li>email - Customer's email address</li>
-            <li>name - Customer's full name</li>
-            <li>purchase_date - Date of purchase (YYYY-MM-DD format)</li>
+            <li><strong>email</strong> - Customer's email address</li>
+            <li><strong>name</strong> - Customer's full name</li>
+            <li><strong>purchase_date</strong> - Date of purchase (YYYY-MM-DD format)</li>
+            <li><strong>edition</strong> - Either "digital" or "print"</li>
         </ul>
+        
+        <p style="margin-top: 15px; color: #666;">
+            <strong>Digital edition columns (required only if edition=digital):</strong>
+        </p>
+        <ul style="margin-left: 20px;">
+            <li><strong>link</strong> - URL for digital access</li>
+            <li><strong>username</strong> - Login username</li>
+            <li><strong>password</strong> - Login password</li>
+        </ul>
+        
+        <p style="margin-top: 15px; color: #856404; background: #fff3cd; padding: 10px; border-radius: 5px;">
+            <strong>Note:</strong> For print editions, leave link, username, and password columns empty.
+        </p>
     </div>
 </div>
 
