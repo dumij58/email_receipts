@@ -3,7 +3,7 @@
 {% block title %}Sent Emails - Email Receipts{% endblock %}
 
 {% block content %}
-<h2>📧 Sent Emails</h2>
+<h2>Sent Emails</h2>
 <p>View and filter all sent email receipts with transaction details.</p>
 
 <div class="filter-section" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -59,7 +59,7 @@
             <a href="{{ url_for('export_sent_emails', status=status_filter, date_from=date_from, date_to=date_to, search=search) }}" 
                class="btn btn-success" 
                style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; text-decoration: none; display: inline-block; margin-left: auto;">
-                📥 Export to CSV
+                Export to CSV
             </a>
         </div>
     </form>
@@ -83,6 +83,7 @@
                 <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Sent At</th>
                 <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Status</th>
                 <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Digital Access</th>
+                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -93,9 +94,9 @@
                 <td style="padding: 12px;">{{ email.recipient_name }}</td>
                 <td style="padding: 12px;">
                     {% if email.edition == 'digital' %}
-                        <span style="background: #cfe2ff; color: #084298; padding: 3px 8px; border-radius: 4px; font-size: 12px;">📱 Digital</span>
+                        <span style="background: #cfe2ff; color: #084298; padding: 3px 8px; border-radius: 4px; font-size: 12px;">Digital</span>
                     {% else %}
-                        <span style="background: #f8f9fa; color: #495057; padding: 3px 8px; border-radius: 4px; font-size: 12px;">📰 Print</span>
+                        <span style="background: #f8f9fa; color: #495057; padding: 3px 8px; border-radius: 4px; font-size: 12px;">Print</span>
                     {% endif %}
                 </td>
                 <td style="padding: 12px;">{{ email.purchase_date }}</td>
@@ -107,11 +108,11 @@
                     {% endif %}
                 </td>
                 <td style="padding: 12px;">{{ email.sent_at.strftime('%Y-%m-%d %H:%M:%S') if email.sent_at else 'N/A' }}</td>
-                <td style="padding: 12px; text-align: center; font-size: 20px;">
+                <td style="padding: 12px; text-align: center;">
                     {% if email.status == 'success' %}
-                        <span style="color: #28a745;" title="Success">✓</span>
+                        <span style="color: #28a745; font-weight: bold;">Success</span>
                     {% else %}
-                        <span style="color: #dc3545;" title="Failed">✗</span>
+                        <span style="color: #dc3545; font-weight: bold;">Failed</span>
                     {% endif %}
                 </td>
                 <td style="padding: 12px;">
@@ -124,10 +125,19 @@
                         <span style="color: #999; font-size: 12px;">—</span>
                     {% endif %}
                 </td>
+                <td style="padding: 12px; text-align: center;">
+                    <form method="post" action="{{ url_for('resend_email', email_id=email.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to resend this email to {{ email.recipient_email }}?');">
+                        <button type="submit" 
+                                style="background: #28a745; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;" 
+                                title="Resend email">
+                            Resend
+                        </button>
+                    </form>
+                </td>
             </tr>
             {% if email.edition == 'digital' %}
             <tr id="digital-{{ email.id }}" style="display: none; border-bottom: 1px solid #eee; background: #e7f3ff;">
-                <td colspan="9" style="padding: 12px; font-size: 12px;">
+                <td colspan="10" style="padding: 12px; font-size: 12px;">
                     <strong style="color: #004085;">Digital Access Details:</strong><br>
                     <div style="margin-top: 8px; display: grid; gap: 5px;">
                         <div><strong>Link:</strong> <a href="{{ email.digital_link }}" target="_blank" style="color: #007bff;">{{ email.digital_link }}</a></div>
@@ -139,7 +149,7 @@
             {% endif %}
             {% if email.error_message %}
             <tr style="border-bottom: 1px solid #eee; background: #fff3cd;">
-                <td colspan="9" style="padding: 8px 12px; font-size: 12px; color: #856404;">
+                <td colspan="10" style="padding: 8px 12px; font-size: 12px; color: #856404;">
                     <strong>Error:</strong> {{ email.error_message }}
                 </td>
             </tr>
@@ -163,7 +173,7 @@ function toggleDigitalDetails(emailId) {
 <!-- Pagination -->
 <div style="margin: 30px 0; display: flex; justify-content: center; align-items: center; gap: 10px;">
     {% if pagination.has_prev %}
-        <a href="{{ url_for('sent_emails', page=pagination.prev_num, per_page=per_page, status=status_filter, date_from=date_from, date_to=date_to, search=search) }}" 
+        <a href="{{ url_for('sent_emails', page=pagination.prev_num, per_page=per_page, status=status_filter or '', date_from=date_from or '', date_to=date_to or '', search=search or '') }}" 
            style="padding: 8px 16px; background: #3e1c68; color: white; text-decoration: none; border-radius: 5px;">
             « Previous
         </a>
@@ -176,7 +186,7 @@ function toggleDigitalDetails(emailId) {
     </span>
     
     {% if pagination.has_next %}
-        <a href="{{ url_for('sent_emails', page=pagination.next_num, per_page=per_page, status=status_filter, date_from=date_from, date_to=date_to, search=search) }}" 
+        <a href="{{ url_for('sent_emails', page=pagination.next_num, per_page=per_page, status=status_filter or '', date_from=date_from or '', date_to=date_to or '', search=search or '') }}" 
            style="padding: 8px 16px; background: #3e1c68; color: white; text-decoration: none; border-radius: 5px;">
             Next »
         </a>
@@ -187,13 +197,13 @@ function toggleDigitalDetails(emailId) {
 
 {% else %}
 <div style="background: #fff3cd; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
-    <p style="margin: 0; color: #856404;">📭 No sent emails found matching your filters.</p>
+    <p style="margin: 0; color: #856404;">No sent emails found matching your filters.</p>
 </div>
 {% endif %}
 
 <div style="margin-top: 30px; padding: 15px; background: #e7f3ff; border-radius: 8px;">
     <p style="margin: 0; color: #004085;">
-        <strong>💡 Tip:</strong> Use the filters above to search for specific emails, date ranges, or view only successful/failed sends. 
+        <strong>Tip:</strong> Use the filters above to search for specific emails, date ranges, or view only successful/failed sends. 
         Export filtered results to CSV for record keeping.
     </p>
 </div>

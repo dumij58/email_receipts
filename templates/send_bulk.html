@@ -100,6 +100,92 @@
     .download-template:hover {
         text-decoration: underline;
     }
+    
+    .csv-preview {
+        margin: 30px 0;
+        display: none;
+    }
+    
+    .csv-preview h3 {
+        color: #3e1c68;
+        margin-bottom: 15px;
+    }
+    
+    .csv-table-wrapper {
+        overflow-x: auto;
+        max-height: 400px;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    
+    .csv-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+    
+    .csv-table th {
+        background: #3e1c68;
+        color: white;
+        padding: 12px;
+        text-align: left;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .csv-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #dee2e6;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .csv-table tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .csv-table tr:nth-child(even) {
+        background: #fafafa;
+    }
+    
+    .csv-table tr:nth-child(even):hover {
+        background: #f0f0f0;
+    }
+    
+    .reset-btn {
+        background: #6c757d;
+        color: white;
+        padding: 10px 25px;
+        border: none;
+        border-radius: 5px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-right: 10px;
+    }
+    
+    .reset-btn:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+    }
+    
+    .btn-container {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+    
+    .record-count {
+        padding: 10px;
+        background: #e7f3ff;
+        border-left: 4px solid #3e1c68;
+        margin-bottom: 15px;
+        border-radius: 3px;
+    }
 </style>
 {% endblock %}
 
@@ -111,7 +197,7 @@
     <form method="POST" action="{{ url_for('send_bulk') }}" enctype="multipart/form-data" id="bulkForm">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         <div class="upload-area" id="uploadArea">
-            <div class="upload-icon">📁</div>
+            <div class="upload-icon"><i class="bi bi-file-earmark-arrow-up" style="font-size: 48px;"></i></div>
             <h3>Click to Upload CSV File</h3>
             <p style="color: #666; margin-top: 10px;">or drag and drop your file here</p>
             <input type="file" id="csv_file" name="csv_file" class="file-input" accept=".csv" required>
@@ -119,11 +205,28 @@
         
         <div class="file-name" id="fileName"></div>
         
-        <button type="submit" class="btn" id="submitBtn" disabled>Send Bulk Emails</button>
+        <!-- CSV Preview Section -->
+        <div class="csv-preview" id="csvPreview">
+            <h3><i class="bi bi-table"></i> CSV File Preview</h3>
+            <div class="record-count" id="recordCount"></div>
+            <div class="csv-table-wrapper">
+                <table class="csv-table" id="csvTable">
+                    <thead id="csvHeader"></thead>
+                    <tbody id="csvBody"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="btn-container">
+            <button type="button" class="reset-btn" id="resetBtn" style="display: none;">
+                <i class="bi bi-arrow-counterclockwise"></i> Choose Different File
+            </button>
+            <button type="submit" class="btn" id="submitBtn" disabled>Send Bulk Emails</button>
+        </div>
     </form>
     
     <div class="csv-format">
-        <h3>📋 CSV File Format</h3>
+        <h3><i class="bi bi-file-earmark-text"></i> CSV File Format</h3>
         <p style="margin-bottom: 15px;">Your CSV file should have the following columns:</p>
         <code>
             email,name,purchase_date,edition,link,username,password<br>

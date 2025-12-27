@@ -2,7 +2,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magazine Purchase Receipt</title>
+    <title>Digital Magazine Purchase Receipt</title>
     <style type="text/css">
         @media only screen and (max-width: 600px) {
             .main-table {
@@ -59,7 +59,7 @@
                     <!-- Main Content -->
                     <tr>
                         <td class="content-padding" style="padding: 30px;">
-
+                            
                             <!-- Magazine Details -->
                             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 25px;">
                                 <tr>
@@ -76,7 +76,7 @@
                                             </tr>
                                             <tr>
                                                 <td style="color: #666; font-size: 14px;">Edition:</td>
-                                                <td align="right" style="color: #2d2d2d; font-weight: 600; font-size: 14px;">{{ edition }}</td>
+                                                <td align="right" style="color: #630460; font-weight: 600; font-size: 14px;">Digital</td>
                                             </tr>
                                             <tr>
                                                 <td style="color: #666; font-size: 14px;">Purchase Date:</td>
@@ -117,12 +117,11 @@
                                 </tr>
                             </table>
 
-                            <!-- Billing & Shipping -->
+                            <!-- Billing Information -->
                             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 25px; background-color: #F8F9FA; padding: 20px; border-radius: 8px; border-left: 4px solid #C0C0C0;">
                                 <tr>
                                     <td>
                                         <h3 style="color: #630460; margin: 0 0 10px 0; font-size: 16px;">Billing Information</h3>
-                                        <p style="margin: 5px 0; color: #666; font-size: 14px; line-height: 1.6;"></p>
                                     </td>
                                 </tr>
                                 <tr>
@@ -140,26 +139,37 @@
                                 </tr>
                             </table>
 
-                            <!-- Access Info -->
-                            {% if edition=="digital" %}
+                            <!-- Digital Access Information - Priority Section -->
                             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 25px;">
                                 <tr>
                                     <td style="padding-bottom: 15px;">
-                                        <h2 style="color: #630460; margin: 0; font-size: 20px; border-bottom: 2px solid #d3a9ea; padding-bottom: 10px;">Access Information</h2>
+                                        <h2 style="color: #630460; margin: 0; font-size: 20px; border-bottom: 2px solid #d3a9ea; padding-bottom: 10px;">Your Digital Access</h2>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td class="section-padding" style="background-color: #F8F9FA; padding: 20px; border-radius: 8px; border-left: 4px solid #b64db3;">
-                                        <p style="margin: 0; color: #2d2d2d; font-size: 14px; line-height: 1.6; word-break: break-word;">
-                                            <strong>Link:</strong> <a href="{{ digital_link }}" style="word-break: break-all;">{{ digital_link }}</a><br>
-                                            <br>
-                                            <strong>Username:</strong> {{ digital_username }}<br>
-                                            <strong>Password:</strong> {{ digital_password }}<br>
+                                    <td class="section-padding" style="background-color: #F8F9FA; padding: 20px; border-radius: 8px; border-left: 4px solid #a707a2;">
+                                        <p style="margin: 0 0 15px 0; color: #2d2d2d; font-size: 14px; line-height: 1.6;">
+                                            Your digital magazine is now available! Use the credentials below to access your content:
                                         </p>
+                                        <table width="100%" cellpadding="8" cellspacing="0" style="border-spacing: 0; background-color: #ffffff; border-radius: 5px; padding: 10px;">
+                                            <tr>
+                                                <td style="color: #666; font-size: 14px; padding: 8px;"><strong>Access Link:</strong></td>
+                                                <td style="color: #a707a2; font-size: 14px; padding: 8px; word-break: break-all;">
+                                                    <a href="{{ digital_link }}" style="color: #a707a2; text-decoration: none;">{{ digital_link }}</a>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #666; font-size: 14px; padding: 8px;"><strong>Username:</strong></td>
+                                                <td style="color: #2d2d2d; font-weight: 600; font-size: 14px; padding: 8px; font-family: monospace; background-color: #f8f9fa; border-radius: 3px;">{{ digital_username }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #666; font-size: 14px; padding: 8px;"><strong>Password:</strong></td>
+                                                <td style="color: #2d2d2d; font-weight: 600; font-size: 14px; padding: 8px; font-family: monospace; background-color: #f8f9fa; border-radius: 3px;">{{ digital_password }}</td>
+                                            </tr>
+                                        </table>
                                     </td>
                                 </tr>
                             </table>
-                            {% endif %}
                         </td>
                     </tr>
 
@@ -172,11 +182,11 @@
                                 +94712808865
                             </p>
                             <p style="margin: 20px 0 0 0; color: #666; font-size: 12px; line-height: 1.6;">
-                                Please keep this email as proof of purchase.<br>
+                                Please keep this email as proof of purchase and for accessing your digital content.<br>
                                 This is an automated receipt. Please do not reply directly to this email.
                             </p>
                             <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #444;">
-                                <p style="margin: 0 0 10px 0; color: #a707a2; font-size: 24px; font-weight: bold; letter-spacing: 1px;">FOS Media</p>
+                                <p style="margin: 0 0 10px 0; color: #630460; font-size: 24px; font-weight: bold; letter-spacing: 1px;">FOS Media</p>
                                 <p style="margin: 5px 0 0 0; color: #999; font-size: 12px;">
                                     <a href="https://fosmedia.cmb.ac.lk" style="color: inherit !important; text-decoration: none !important; border: none; outline: none;">fosmedia.cmb.ac.lk</a>
                                 </p>

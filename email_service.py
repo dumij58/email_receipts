@@ -1,4 +1,5 @@
 import os
+import base64
 from datetime import datetime
 import logging
 from flask import render_template
@@ -54,14 +55,26 @@ class EmailService:
         """Check if Brevo is properly configured"""
         return bool(self.brevo_api_key and self.sender_email)
     
-    def create_receipt_email(self, recipient_name, magazine_name, purchase_amount, purchase_date):
-        """Create HTML email content for receipt"""
+    def create_receipt_email(self, recipient_name, magazine_name, purchase_amount, purchase_date, quantity=1, transaction_id=None, edition=None, digital_link=None, digital_username=None, digital_password=None):
+        """Create HTML email content for receipt using appropriate template based on edition"""
+        # Choose template based on edition type
+        if edition and edition.lower() == 'digital':
+            template = 'email_receipt_digital.html'
+        else:
+            template = 'email_receipt_print.html'
+        
         html_content = render_template(
-            'email_receipt.html',
+            template,
             recipient_name=recipient_name,
             magazine_name=magazine_name,
             purchase_amount=purchase_amount,
             purchase_date=purchase_date,
+            quantity=quantity,
+            transaction_id=transaction_id or 'N/A',
+            edition=edition or 'print',
+            digital_link=digital_link or '',
+            digital_username=digital_username or '',
+            digital_password=digital_password or '',
             receipt_date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             sender_name=self.sender_name
         )
@@ -113,7 +126,7 @@ class EmailService:
             return (False, None, error_msg)
     
     def send_single_receipt(self, recipient_email, recipient_name, magazine_name, 
-                          purchase_amount, purchase_date):
+                          purchase_amount, purchase_date, quantity=1, transaction_id=None, edition=None, digital_link=None, digital_username=None, digital_password=None):
         """Send a single receipt email
         
         Returns:
@@ -121,7 +134,8 @@ class EmailService:
         """
         subject = f"Receipt for {magazine_name} - {self.sender_name}"
         html_content = self.create_receipt_email(
-            recipient_name, magazine_name, purchase_amount, purchase_date
+            recipient_name, magazine_name, purchase_amount, purchase_date, quantity,
+            transaction_id, edition, digital_link, digital_username, digital_password
         )
         return self.send_email(recipient_email, subject, html_content)
     
@@ -137,10 +151,21 @@ class EmailService:
         
         for row in csv_reader:
             try:
-                # Expected CSV columns: email, name, magazine_name, purchase_amount, purchase_date
+                # Expected CSV columns: email, name, purchase_date, quantity, edition, link, username, password
                 recipient_email = row.get('email', '').strip()
                 recipient_name = row.get('name', '').strip()
                 purchase_date = row.get('purchase_date', '').strip()
+                quantity = int(row.get('quantity', '1').strip() or '1')  # Default to 1 if not provided
+                edition = row.get('edition', 'print').lower().strip()
+                
+                # Validate edition
+                if edition not in ['digital', 'print']:
+                    edition = 'print'
+                
+                # Digital edition fields
+                digital_link = row.get('link', '').strip() if edition == 'digital' else None
+                digital_username = row.get('username', '').strip() if edition == 'digital' else None
+                digital_password = row.get('password', '').strip() if edition == 'digital' else None
                 
                 if not all([recipient_email, recipient_name, purchase_date]):
                     if DEBUG_MODE:
@@ -149,9 +174,22 @@ class EmailService:
                     results.append((recipient_email, recipient_name, False, None, "Missing required fields"))
                     continue
                 
+                # Validate digital fields if digital edition
+                if edition == 'digital' and not all([digital_link, digital_username, digital_password]):
+                    if DEBUG_MODE:
+                        logger.debug(f"Skipping digital edition with missing credentials: {row}")
+                    failed_count += 1
+                    results.append((recipient_email, recipient_name, False, None, "Missing digital access credentials"))
+                    continue
+                
+                # Generate transaction ID before sending
+                import uuid
+                transaction_id = f"SNX-{uuid.uuid4().hex[:12].upper()}"
+                
                 success, message_id, error_message = self.send_single_receipt(
                     recipient_email, recipient_name, self.magazine_name,
-                    self.purchase_amount, purchase_date
+                    self.purchase_amount, purchase_date, quantity, transaction_id,
+                    edition, digital_link, digital_username, digital_password
                 )
                 
                 results.append((recipient_email, recipient_name, success, message_id, error_message))
@@ -165,6 +203,7 @@ class EmailService:
                 error_msg = f"Error processing row: {str(e)}"
                 logger.error(error_msg)
                 failed_count += 1
+                results.append((recipient_email, recipient_name, False, None, error_msg))
                 results.append((recipient_email, recipient_name, False, None, error_msg))
         
         if DEBUG_MODE:

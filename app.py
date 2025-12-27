@@ -99,7 +99,8 @@ def set_security_headers(response):
     response.headers['X-XSS-Protection'] = '1; mode=block'
     # Content Security Policy - relaxed to allow browser extensions and devtools
     # Note: blob: added to script-src to prevent browser extension conflicts
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"
+    # Added cdn.jsdelivr.net for Bootstrap Icons
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'"
     # Referrer policy
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
     # Permissions policy
@@ -311,6 +312,7 @@ def send_single():
             recipient_name = sanitize_input(request.form.get('name', ''))
             purchase_date = sanitize_input(request.form.get('purchase_date', ''))
             edition = sanitize_input(request.form.get('edition', ''))
+            quantity = int(request.form.get('quantity', '1') or '1')  # Default to 1 if not provided
             
             # Digital edition fields (only if edition is digital)
             digital_link = sanitize_input(request.form.get('digital_link', '')) if edition == 'digital' else None
@@ -344,6 +346,10 @@ def send_single():
                 flash('Invalid email address format', 'error')
                 return redirect(url_for('send_single'))
             
+            # Generate transaction ID before sending
+            import uuid
+            transaction_id = f"SNX-{uuid.uuid4().hex[:12].upper()}"
+            
             # Send email
             if DEBUG_MODE:
                 app.logger.debug(f"Calling email_service.send_single_receipt for {recipient_email}")
@@ -352,11 +358,14 @@ def send_single():
                 recipient_name=recipient_name,
                 magazine_name=magazine_name,
                 purchase_amount=purchase_amount,
-                purchase_date=purchase_date
+                purchase_date=purchase_date,
+                quantity=quantity,
+                transaction_id=transaction_id,
+                edition=edition,
+                digital_link=digital_link,
+                digital_username=digital_username,
+                digital_password=digital_password
             )
-            
-            # Extract transaction ID from message_id
-            transaction_id = extract_transaction_id(message_id)
             
             # Log email to database
             try:
@@ -521,14 +530,17 @@ def sent_emails():
     # Build query
     query = SentEmail.query
     
-    # Apply filters
+    # Apply filters only if provided
+    filters_applied = False
     if status_filter:
         query = query.filter(SentEmail.status == status_filter)
+        filters_applied = True
     
     if date_from:
         try:
             date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
             query = query.filter(SentEmail.sent_at >= date_from_obj)
+            filters_applied = True
         except ValueError:
             flash('Invalid date format for date_from', 'error')
     
@@ -538,6 +550,7 @@ def sent_emails():
             # Add one day to include the entire end date
             date_to_obj = date_to_obj.replace(hour=23, minute=59, second=59)
             query = query.filter(SentEmail.sent_at <= date_to_obj)
+            filters_applied = True
         except ValueError:
             flash('Invalid date format for date_to', 'error')
     
@@ -549,6 +562,7 @@ def sent_emails():
                 SentEmail.recipient_name.ilike(search_pattern)
             )
         )
+        filters_applied = True
     
     # Order by sent_at descending (most recent first)
     query = query.order_by(SentEmail.sent_at.desc())
@@ -563,7 +577,68 @@ def sent_emails():
                          date_from=date_from,
                          date_to=date_to,
                          search=search,
-                         per_page=per_page)
+                         per_page=per_page,
+                         filters_applied=filters_applied)
+
+@app.route('/sent-emails/resend/<int:email_id>', methods=['POST'])
+@login_required
+def resend_email(email_id):
+    """Resend a previously sent email"""
+    try:
+        # Get the original email record
+        original_email = SentEmail.query.get_or_404(email_id)
+        
+        # Create email service
+        email_service = EmailService()
+        
+        # Get additional data for the email
+        magazine_name = os.environ.get('MAGAZINE_NAME', '[MAGAZINE_NAME]')
+        purchase_amount = os.environ.get('PURCHASE_AMOUNT', '[PURCHASE_AMOUNT]')
+        
+        # Resend the email with same data
+        success, message_id, error_message = email_service.send_single_receipt(
+            recipient_email=original_email.recipient_email,
+            recipient_name=original_email.recipient_name,
+            magazine_name=magazine_name,
+            purchase_amount=purchase_amount,
+            purchase_date=original_email.purchase_date,
+            quantity=1,  # Default quantity
+            transaction_id=original_email.transaction_id,
+            edition=original_email.edition,
+            digital_link=original_email.digital_link,
+            digital_username=original_email.digital_username,
+            digital_password=original_email.digital_password
+        )
+        
+        # Create new sent email record
+        new_email_record = SentEmail(
+            user_id=current_user.id,
+            recipient_email=original_email.recipient_email,
+            recipient_name=original_email.recipient_name,
+            purchase_date=original_email.purchase_date,
+            edition=original_email.edition,
+            digital_link=original_email.digital_link,
+            digital_username=original_email.digital_username,
+            digital_password=original_email.digital_password,
+            transaction_id=original_email.transaction_id,
+            message_id=message_id,
+            status='success' if success else 'failed',
+            error_message=error_message
+        )
+        
+        db.session.add(new_email_record)
+        db.session.commit()
+        
+        if success:
+            flash(f'Email successfully resent to {original_email.recipient_email}', 'success')
+        else:
+            flash(f'Failed to resend email: {error_message}', 'error')
+        
+    except Exception as e:
+        app.logger.error(f"Error resending email: {str(e)}")
+        flash(f'An error occurred: {str(e)}', 'error')
+    
+    return redirect(url_for('sent_emails'))
 
 @app.route('/sent-emails/export')
 @login_required
@@ -713,20 +788,28 @@ def api_send_email():
         recipient_email = sanitize_input(data['email'])
         recipient_name = sanitize_input(data['name'])
         purchase_date = sanitize_input(data['purchase_date'])
+        quantity = int(data.get('quantity', '1') or '1')  # Default to 1 if not provided
         digital_link = sanitize_input(data.get('digital_link', '')) if edition == 'digital' else None
         digital_username = sanitize_input(data.get('digital_username', '')) if edition == 'digital' else None
         digital_password = sanitize_input(data.get('digital_password', '')) if edition == 'digital' else None
+        
+        # Generate transaction ID before sending
+        import uuid
+        transaction_id = f"SNX-{uuid.uuid4().hex[:12].upper()}"
         
         success, message_id, error_message = email_service.send_single_receipt(
             recipient_email=recipient_email,
             recipient_name=recipient_name,
             magazine_name=magazine_name,
             purchase_amount=purchase_amount,
-            purchase_date=purchase_date
+            purchase_date=purchase_date,
+            quantity=quantity,
+            transaction_id=transaction_id,
+            edition=edition,
+            digital_link=digital_link,
+            digital_username=digital_username,
+            digital_password=digital_password
         )
-        
-        # Extract transaction ID from message_id
-        transaction_id = extract_transaction_id(message_id)
         
         # Log email to database
         try:

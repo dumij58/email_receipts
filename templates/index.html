@@ -74,27 +74,27 @@
     
     <div class="cards">
         <a href="{{ url_for('send_single') }}" class="card">
-            <div class="card-icon">✉️</div>
+            <div class="card-icon"><i class="bi bi-envelope"></i></div>
             <h3>Send Single Email</h3>
             <p>Send a receipt to one customer at a time</p>
         </a>
         
         <a href="{{ url_for('send_bulk') }}" class="card">
-            <div class="card-icon">📬</div>
+            <div class="card-icon"><i class="bi bi-mailbox"></i></div>
             <h3>Send Bulk Emails</h3>
             <p>Upload a CSV file to send receipts to multiple customers at once</p>
         </a>
     </div>
     
     <div class="info-section">
-        <h3>📋 How to Use</h3>
+        <h3><i class="bi bi-list-ul"></i> How to Use</h3>
         <ul>
             <li><strong>Single Email:</strong> Fill in the customer details in the form and send individual receipts</li>
             <li><strong>Bulk Email:</strong> Upload a CSV file with columns: email, name, purchase_date</li>
             <li><strong>Configuration:</strong> Set your Brevo API key, Magazine Name, and Purchase Amount in the .env file before using</li>
         </ul>
         
-        <h3 style="margin-top: 20px;">✅ Features</h3>
+        <h3 style="margin-top: 20px;"><i class="bi bi-check-circle"></i> Features</h3>
         <ul>
             <li>Professional HTML email template</li>
             <li>Support for both single and bulk sending</li>

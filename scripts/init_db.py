@@ -22,7 +22,7 @@ def init_database():
         
         # Create all tables
         db.create_all()
-        print("✓ Database tables created")
+        print("[OK] Database tables created")
         
         # Check if any users exist
         user_count = User.query.count()
@@ -46,21 +46,21 @@ def init_database():
             db.session.add(admin_user)
             db.session.commit()
             
-            print(f"✓ Default admin user created: {admin_username}")
+            print(f"[OK] Default admin user created: {admin_username}")
             if os.environ.get('FLASK_ENV') != 'production':
                 print(f"  Username: {admin_username}")
                 print(f"  Password: {admin_password}")
-                print("  ⚠️  IMPORTANT: Change the default password after first login!")
+                print("  WARNING: Change the default password after first login!")
         else:
-            print(f"✓ Database already has {user_count} user(s). Skipping default admin creation.")
+            print(f"[OK] Database already has {user_count} user(s). Skipping default admin creation.")
         
-        print("✓ Database initialization complete!")
+        print("[OK] Database initialization complete!")
 
 if __name__ == '__main__':
     try:
         init_database()
     except Exception as e:
-        print(f"✗ Error initializing database: {str(e)}")
+        print(f"[ERROR] Error initializing database: {str(e)}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
