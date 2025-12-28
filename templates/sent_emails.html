@@ -81,7 +81,9 @@
                 <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Purchase Date</th>
                 <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Transaction ID</th>
                 <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Sent At</th>
-                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Status</th>
+                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Send Status</th>
+                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Delivery Status</th>
+                <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Engagement</th>
                 <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Digital Access</th>
                 <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Actions</th>
             </tr>
@@ -110,10 +112,42 @@
                 <td style="padding: 12px;">{{ email.sent_at.strftime('%Y-%m-%d %H:%M:%S') if email.sent_at else 'N/A' }}</td>
                 <td style="padding: 12px; text-align: center;">
                     {% if email.status == 'success' %}
-                        <span style="color: #28a745; font-weight: bold;">Success</span>
+                        <span style="color: #28a745; font-weight: bold;">✓ Sent</span>
                     {% else %}
-                        <span style="color: #dc3545; font-weight: bold;">Failed</span>
+                        <span style="color: #dc3545; font-weight: bold;">✗ Failed</span>
                     {% endif %}
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                    {% if email.delivery_status == 'delivered' %}
+                        <span style="background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">✓ Delivered</span>
+                    {% elif email.delivery_status == 'hard_bounce' %}
+                        <span style="background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;" title="{{ email.bounce_reason }}">✗ Hard Bounce</span>
+                    {% elif email.delivery_status == 'soft_bounce' %}
+                        <span style="background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;" title="{{ email.bounce_reason }}">⚠ Soft Bounce</span>
+                    {% elif email.delivery_status == 'blocked' %}
+                        <span style="background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;" title="{{ email.bounce_reason }}">🚫 Blocked</span>
+                    {% elif email.delivery_status == 'spam' %}
+                        <span style="background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">🚩 Spam</span>
+                    {% elif email.delivery_status == 'invalid_email' %}
+                        <span style="background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">✗ Invalid</span>
+                    {% elif email.status == 'success' %}
+                        <span style="color: #6c757d; font-size: 11px;">⏳ Pending...</span>
+                    {% else %}
+                        <span style="color: #999; font-size: 11px;">—</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                    <div style="display: flex; flex-direction: column; gap: 3px; align-items: center;">
+                        {% if email.opened_at %}
+                            <span style="background: #cfe2ff; color: #084298; padding: 2px 6px; border-radius: 3px; font-size: 10px;" title="Opened at {{ email.opened_at.strftime('%Y-%m-%d %H:%M:%S') }}">👁 Opened</span>
+                        {% endif %}
+                        {% if email.clicked_at %}
+                            <span style="background: #d1ecf1; color: #0c5460; padding: 2px 6px; border-radius: 3px; font-size: 10px;" title="Clicked at {{ email.clicked_at.strftime('%Y-%m-%d %H:%M:%S') }}">🖱 Clicked</span>
+                        {% endif %}
+                        {% if not email.opened_at and not email.clicked_at %}
+                            <span style="color: #999; font-size: 11px;">—</span>
+                        {% endif %}
+                    </div>
                 </td>
                 <td style="padding: 12px;">
                     {% if email.edition == 'digital' and email.digital_link %}
@@ -137,7 +171,7 @@
             </tr>
             {% if email.edition == 'digital' %}
             <tr id="digital-{{ email.id }}" style="display: none; border-bottom: 1px solid #eee; background: #e7f3ff;">
-                <td colspan="10" style="padding: 12px; font-size: 12px;">
+                <td colspan="12" style="padding: 12px; font-size: 12px;">
                     <strong style="color: #004085;">Digital Access Details:</strong><br>
                     <div style="margin-top: 8px; display: grid; gap: 5px;">
                         <div><strong>Link:</strong> <a href="{{ email.digital_link }}" target="_blank" style="color: #007bff;">{{ email.digital_link }}</a></div>
@@ -147,10 +181,17 @@
                 </td>
             </tr>
             {% endif %}
-            {% if email.error_message %}
+            {% if email.bounce_reason %}
             <tr style="border-bottom: 1px solid #eee; background: #fff3cd;">
-                <td colspan="10" style="padding: 8px 12px; font-size: 12px; color: #856404;">
-                    <strong>Error:</strong> {{ email.error_message }}
+                <td colspan="12" style="padding: 8px 12px; font-size: 12px; color: #856404;">
+                    <strong>⚠ Bounce/Block Reason:</strong> {{ email.bounce_reason }}
+                </td>
+            </tr>
+            {% endif %}
+            {% if email.error_message %}
+            <tr style="border-bottom: 1px solid #eee; background: #f8d7da;">
+                <td colspan="12" style="padding: 8px 12px; font-size: 12px; color: #721c24;">
+                    <strong>❌ Send Error:</strong> {{ email.error_message }}
                 </td>
             </tr>
             {% endif %}

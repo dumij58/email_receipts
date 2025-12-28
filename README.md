@@ -41,11 +41,12 @@ docker compose up -d
 
 - 🔐 **User Authentication**: Secure login system with database-backed user management
 - 📊 **Email Tracking**: Track all sent emails with transaction IDs and status
+- � **Real-time Status Updates**: Brevo webhook integration for delivery tracking, opens, clicks, bounces
 - 📧 **Single Email Sending**: Send individual receipts with custom details
 - 📬 **Bulk Email Sending**: Upload CSV files to send receipts to multiple customers
-- 📈 **Sent Emails Dashboard**: View, filter, and export email history
+- 📈 **Sent Emails Dashboard**: View, filter, and export email history with delivery status badges
 - 🔍 **Advanced Filtering**: Filter by status, date range, and search recipients
-- 📥 **CSV Export**: Export filtered email logs for record keeping
+- 📥 **CSV Export**: Export filtered email logs with delivery metrics
 - 🎨 **Clean Web Interface**: Modern, responsive UI built with HTML/CSS
 - 🔒 **Secure Configuration**: Environment-based API credentials
 - 🗄️ **Database Support**: SQLite for development, PostgreSQL for production
@@ -209,19 +210,51 @@ When you first access the application, you'll be redirected to the login page.
 
 ### Sent Emails Dashboard
 
-The new **Sent Emails** page provides comprehensive email tracking:
+The **Sent Emails** page provides comprehensive email tracking with real-time delivery status:
 
 **Features:**
 - View all sent email receipts with full details
+- **Real-time delivery tracking** via Brevo webhooks:
+  - ✓ Delivered - Successfully delivered to recipient
+  - ✗ Hard Bounce - Permanent delivery failure
+  - ⚠ Soft Bounce - Temporary delivery issue
+  - 🚫 Blocked - Blocked by recipient's server
+  - 🚩 Spam - Marked as spam
+- **Engagement metrics**:
+  - 👁 Email opened by recipient
+  - 🖱 Links clicked by recipient
 - Filter by status (success/failed)
 - Filter by date range (from/to)
 - Search by recipient email or name
 - Adjustable pagination (20/50/100 per page)
-- Export filtered results to CSV
-- View Brevo message IDs for delivery tracking
-- See error messages for failed sends
+- Export filtered results to CSV with delivery metrics
+- View bounce reasons and error details
 
 **Access:** Navigate to "Sent Emails" in the top menu after logging in.
+
+### Setting Up Webhooks for Real-Time Tracking
+
+To enable real-time email delivery and engagement tracking:
+
+1. **Configure webhook secret** (optional but recommended):
+   ```bash
+   # Add to .env or docker-compose.yml
+   BREVO_WEBHOOK_SECRET=your-secure-random-secret
+   ```
+
+2. **Configure webhook in Brevo dashboard**:
+   - Login to [Brevo](https://app.brevo.com/)
+   - Go to: Profile → SMTP & API → Webhooks
+   - Add webhook URL: `https://your-domain.com/webhook/brevo`
+   - Select events: delivered, hard_bounce, soft_bounce, blocked, spam, opened, click
+
+3. **For local testing with ngrok**:
+   ```bash
+   ngrok http 5000
+   # Use the HTTPS URL: https://abc123.ngrok.io/webhook/brevo
+   ```
+
+**📖 Detailed setup instructions:** See [docs/WEBHOOK_SETUP.md](docs/WEBHOOK_SETUP.md)
 
 ### CSV File Format for Bulk Sending
 

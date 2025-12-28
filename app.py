@@ -845,6 +845,165 @@ def api_send_email():
         return jsonify({'error': 'Internal server error'}), 500
 
 # ============================================
+# BREVO WEBHOOK ENDPOINT
+# ============================================
+
+@app.route('/webhook/brevo', methods=['POST'])
+def brevo_webhook():
+    """
+    Webhook endpoint to receive Brevo email events
+    Handles: delivered, hard_bounce, soft_bounce, blocked, spam, invalid_email, opened, click
+    """
+    try:
+        # Get webhook data
+        data = request.get_json()
+        
+        if not data:
+            app.logger.warning("Brevo webhook: No JSON data received")
+            return jsonify({'error': 'No data received'}), 400
+        
+        # Log webhook for debugging
+        app.logger.info(f"Brevo webhook received: {data.get('event', 'unknown')}")
+        
+        # Validate webhook signature (if configured)
+        webhook_secret = os.environ.get('BREVO_WEBHOOK_SECRET')
+        if webhook_secret:
+            signature = request.headers.get('X-Brevo-Signature')
+            if not signature:
+                app.logger.warning("Brevo webhook: Missing signature")
+                return jsonify({'error': 'Unauthorized'}), 401
+            
+            # Verify signature (Brevo uses HMAC-SHA256)
+            import hmac
+            import hashlib
+            expected_signature = hmac.new(
+                webhook_secret.encode('utf-8'),
+                request.data,
+                hashlib.sha256
+            ).hexdigest()
+            
+            if not hmac.compare_digest(signature, expected_signature):
+                app.logger.warning("Brevo webhook: Invalid signature")
+                return jsonify({'error': 'Unauthorized'}), 401
+        
+        # Extract event data
+        event_type = data.get('event')
+        message_id = data.get('message-id') or data.get('id')
+        email = data.get('email')
+        timestamp_str = data.get('date') or data.get('ts')
+        
+        if not event_type or not message_id:
+            app.logger.warning(f"Brevo webhook: Missing event or message_id: {data}")
+            return jsonify({'error': 'Missing required fields'}), 400
+        
+        # Parse timestamp
+        from datetime import timezone
+        event_timestamp = datetime.now(timezone.utc)
+        if timestamp_str:
+            try:
+                # Brevo sends Unix timestamp
+                if isinstance(timestamp_str, (int, float)):
+                    event_timestamp = datetime.fromtimestamp(timestamp_str, tz=timezone.utc)
+                elif isinstance(timestamp_str, str) and timestamp_str.isdigit():
+                    event_timestamp = datetime.fromtimestamp(int(timestamp_str), tz=timezone.utc)
+                else:
+                    # Try ISO format
+                    event_timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+            except Exception as e:
+                app.logger.warning(f"Failed to parse timestamp {timestamp_str}: {e}")
+        
+        # Find email record by message_id
+        sent_email = SentEmail.query.filter_by(message_id=message_id).first()
+        
+        if not sent_email:
+            app.logger.warning(f"Brevo webhook: Email record not found for message_id: {message_id}")
+            return jsonify({'warning': 'Email record not found'}), 200  # Return 200 to prevent retries
+        
+        # Update record based on event type
+        updated = False
+        
+        if event_type in ['delivered', 'delivery']:
+            sent_email.delivery_status = 'delivered'
+            sent_email.last_status_update = event_timestamp
+            updated = True
+            app.logger.info(f"Email {message_id} delivered to {email}")
+        
+        elif event_type in ['hard_bounce', 'hard-bounce']:
+            sent_email.delivery_status = 'hard_bounce'
+            sent_email.last_status_update = event_timestamp
+            sent_email.bounce_reason = data.get('reason') or data.get('error')
+            updated = True
+            app.logger.info(f"Email {message_id} hard bounced: {sent_email.bounce_reason}")
+        
+        elif event_type in ['soft_bounce', 'soft-bounce']:
+            sent_email.delivery_status = 'soft_bounce'
+            sent_email.last_status_update = event_timestamp
+            sent_email.bounce_reason = data.get('reason') or data.get('error')
+            updated = True
+            app.logger.info(f"Email {message_id} soft bounced: {sent_email.bounce_reason}")
+        
+        elif event_type in ['blocked', 'block']:
+            sent_email.delivery_status = 'blocked'
+            sent_email.last_status_update = event_timestamp
+            sent_email.bounce_reason = data.get('reason') or data.get('error')
+            updated = True
+            app.logger.info(f"Email {message_id} blocked: {sent_email.bounce_reason}")
+        
+        elif event_type == 'spam':
+            sent_email.delivery_status = 'spam'
+            sent_email.last_status_update = event_timestamp
+            sent_email.bounce_reason = 'Marked as spam by recipient'
+            updated = True
+            app.logger.info(f"Email {message_id} marked as spam")
+        
+        elif event_type in ['invalid_email', 'invalid-email']:
+            sent_email.delivery_status = 'invalid_email'
+            sent_email.last_status_update = event_timestamp
+            sent_email.bounce_reason = 'Invalid email address'
+            updated = True
+            app.logger.info(f"Email {message_id} invalid address: {email}")
+        
+        elif event_type in ['opened', 'open']:
+            # Only record first open
+            if not sent_email.opened_at:
+                sent_email.opened_at = event_timestamp
+                sent_email.last_status_update = event_timestamp
+                updated = True
+                app.logger.info(f"Email {message_id} opened by {email}")
+        
+        elif event_type in ['click', 'clicked']:
+            # Only record first click
+            if not sent_email.clicked_at:
+                sent_email.clicked_at = event_timestamp
+                sent_email.last_status_update = event_timestamp
+                updated = True
+                app.logger.info(f"Email {message_id} link clicked by {email}")
+        
+        elif event_type == 'unsubscribe':
+            sent_email.last_status_update = event_timestamp
+            updated = True
+            app.logger.info(f"Email {message_id} recipient unsubscribed: {email}")
+        
+        else:
+            app.logger.warning(f"Brevo webhook: Unknown event type: {event_type}")
+        
+        # Save changes
+        if updated:
+            try:
+                db.session.commit()
+                app.logger.info(f"Updated email record for message_id: {message_id}")
+            except Exception as e:
+                app.logger.error(f"Failed to update email record: {e}")
+                db.session.rollback()
+                return jsonify({'error': 'Database error'}), 500
+        
+        return jsonify({'status': 'success'}), 200
+        
+    except Exception as e:
+        app.logger.error(f"Brevo webhook error: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Internal server error'}), 500
+
+# ============================================
 # ERROR HANDLERS
 # ============================================
 

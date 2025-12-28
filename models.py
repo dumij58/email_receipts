@@ -51,8 +51,15 @@ class SentEmail(db.Model):
     sent_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
     transaction_id = db.Column(db.String(100), nullable=True, index=True)  # Extracted from message_id
     message_id = db.Column(db.String(255), nullable=True)  # Full Brevo message ID
-    status = db.Column(db.String(20), nullable=False, index=True)  # 'success' or 'failed'
+    status = db.Column(db.String(20), nullable=False, index=True)  # 'success' or 'failed' (initial send status)
     error_message = db.Column(db.Text, nullable=True)
+    
+    # Brevo webhook tracking - delivery and engagement events
+    delivery_status = db.Column(db.String(30), nullable=True, index=True)  # delivered, hard_bounce, soft_bounce, blocked, spam, invalid_email
+    last_status_update = db.Column(db.DateTime, nullable=True)  # Last webhook event timestamp
+    opened_at = db.Column(db.DateTime, nullable=True)  # First email open timestamp
+    clicked_at = db.Column(db.DateTime, nullable=True)  # First link click timestamp
+    bounce_reason = db.Column(db.Text, nullable=True)  # Reason for bounce/block/spam
     
     def __repr__(self):
         return f'<SentEmail {self.recipient_email} - {self.status}>'
@@ -71,6 +78,11 @@ class SentEmail(db.Model):
             'sent_at': self.sent_at.strftime('%Y-%m-%d %H:%M:%S') if self.sent_at else '',
             'transaction_id': self.transaction_id or '',
             'status': self.status,
+            'delivery_status': self.delivery_status or '',
+            'last_status_update': self.last_status_update.strftime('%Y-%m-%d %H:%M:%S') if self.last_status_update else '',
+            'opened_at': self.opened_at.strftime('%Y-%m-%d %H:%M:%S') if self.opened_at else '',
+            'clicked_at': self.clicked_at.strftime('%Y-%m-%d %H:%M:%S') if self.clicked_at else '',
+            'bounce_reason': self.bounce_reason or '',
             'error_message': self.error_message or '',
             'sent_by': self.sender.username if self.sender else ''
         }
