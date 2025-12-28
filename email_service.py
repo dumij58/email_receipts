@@ -147,7 +147,7 @@ class EmailService:
         """
         success_count = 0
         failed_count = 0
-        results = []  # List of (recipient_email, recipient_name, success, message_id, error_message)
+        results = []  # List of (recipient_email, recipient_name, success, transaction_id, message_id, error_message)
         
         for row in csv_reader:
             try:
@@ -171,7 +171,7 @@ class EmailService:
                     if DEBUG_MODE:
                         logger.debug(f"Skipping row with missing data: {row}")
                     failed_count += 1
-                    results.append((recipient_email, recipient_name, False, None, "Missing required fields"))
+                    results.append((recipient_email, recipient_name, False, None, None, "Missing required fields"))
                     continue
                 
                 # Validate digital fields if digital edition
@@ -179,7 +179,7 @@ class EmailService:
                     if DEBUG_MODE:
                         logger.debug(f"Skipping digital edition with missing credentials: {row}")
                     failed_count += 1
-                    results.append((recipient_email, recipient_name, False, None, "Missing digital access credentials"))
+                    results.append((recipient_email, recipient_name, False, None, None, "Missing digital access credentials"))
                     continue
                 
                 # Generate transaction ID before sending
@@ -192,7 +192,7 @@ class EmailService:
                     edition, digital_link, digital_username, digital_password
                 )
                 
-                results.append((recipient_email, recipient_name, success, message_id, error_message))
+                results.append((recipient_email, recipient_name, success, transaction_id, message_id, error_message))
                 
                 if success:
                     success_count += 1
@@ -203,8 +203,7 @@ class EmailService:
                 error_msg = f"Error processing row: {str(e)}"
                 logger.error(error_msg)
                 failed_count += 1
-                results.append((recipient_email, recipient_name, False, None, error_msg))
-                results.append((recipient_email, recipient_name, False, None, error_msg))
+                results.append((recipient_email, recipient_name, False, None, None, error_msg))
         
         if DEBUG_MODE:
             logger.debug(f"Bulk send completed: {success_count} success, {failed_count} failed")

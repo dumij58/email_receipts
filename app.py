@@ -125,20 +125,6 @@ purchase_amount = email_service.purchase_amount
 # HELPER FUNCTIONS
 # ============================================
 
-def extract_transaction_id(message_id):
-    """Extract transaction ID from Brevo message_id format: <[transaction_id]@smtp-relay.mailin.fr>"""
-    if not message_id:
-        return None
-    try:
-        # Format: <[transaction_id]@smtp-relay.mailin.fr>
-        if message_id.startswith('<') and '@' in message_id:
-            # Remove < and split by @
-            transaction_part = message_id[1:].split('@')[0]
-            return transaction_part
-        return message_id
-    except Exception:
-        return message_id
-
 # ============================================
 # RATE LIMITING & BRUTE FORCE PROTECTION
 # ============================================
@@ -470,12 +456,9 @@ def send_bulk():
             # Log all emails to database
             try:
                 from datetime import timezone
-                for i, (recipient_email, recipient_name, success, message_id, error_message) in enumerate(results['results']):
+                for i, (recipient_email, recipient_name, success, transaction_id, message_id, error_message) in enumerate(results['results']):
                     # Get corresponding recipient data
                     recipient_data = recipients[i] if i < len(recipients) else {}
-                    
-                    # Extract transaction ID from message_id
-                    transaction_id = extract_transaction_id(message_id)
                     
                     sent_email = SentEmail(
                         user_id=current_user.id,
