@@ -53,6 +53,7 @@
             display: flex;
             gap: 15px;
             flex-wrap: wrap;
+            align-items: center;
         }
         
         .nav-links a {
@@ -69,6 +70,73 @@
         }
         
         .nav-links a.active {
+            background: #3e1c68;
+            color: white;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-toggle {
+            color: #333;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: all 0.3s;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-family: inherit;
+        }
+
+        .dropdown-toggle:hover {
+            background: #3e1c68;
+            color: white;
+        }
+
+        .dropdown.active .dropdown-toggle {
+            background: #3e1c68;
+            color: white;
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            min-width: 160px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            padding-top: 5px;
+            margin-top: 0;
+            z-index: 1000;
+        }
+
+        .dropdown:hover .dropdown-menu,
+        .dropdown-menu:hover {
+            display: block;
+        }
+
+        .dropdown-menu a {
+            display: block;
+            padding: 12px 20px;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.3s;
+            border-radius: 5px;
+            margin: 2px 5px;
+        }
+
+        .dropdown-menu a:hover {
+            background: #3e1c68;
+            color: white;
+        }
+
+        .dropdown-menu a.active {
             background: #3e1c68;
             color: white;
         }
@@ -140,8 +208,14 @@
             </div>
             <div class="nav-links">
                 <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}class="active"{% endif %}>Dashboard</a>
-                <a href="{{ url_for('send_single') }}" {% if request.endpoint == 'send_single' %}class="active"{% endif %}>Send Single</a>
-                <a href="{{ url_for('send_bulk') }}" {% if request.endpoint == 'send_bulk' %}class="active"{% endif %}>Send Bulk</a>
+                <div class="dropdown {% if request.endpoint in ['send_single', 'send_bulk', 'send_reminder'] %}active{% endif %}">
+                    <button class="dropdown-toggle">Send Emails</button>
+                    <div class="dropdown-menu">
+                        <a href="{{ url_for('send_single') }}" {% if request.endpoint == 'send_single' %}class="active"{% endif %}>Send Single</a>
+                        <a href="{{ url_for('send_bulk') }}" {% if request.endpoint == 'send_bulk' %}class="active"{% endif %}>Send Bulk</a>
+                        <a href="{{ url_for('send_reminder') }}" {% if request.endpoint == 'send_reminder' %}class="active"{% endif %}>Send Reminder</a>
+                    </div>
+                </div>
                 <a href="{{ url_for('sent_emails') }}" {% if request.endpoint == 'sent_emails' %}class="active"{% endif %}>Sent Emails</a>
                 {% if current_user.is_authenticated %}
                 <a href="{{ url_for('logout') }}" style="background: #dc3545; color: white;">Logout</a>

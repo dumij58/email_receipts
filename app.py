@@ -115,6 +115,13 @@ login_manager.login_message = 'Please log in to access this page.'
 login_manager.login_message_category = 'error'
 login_manager.session_protection = 'strong'  # Enhanced session protection
 
+# Custom unauthorized handler to ensure redirects work properly
+@login_manager.unauthorized_handler
+def unauthorized():
+    """Redirect unauthorized users to login page"""
+    flash('Please log in to access this page.', 'error')
+    return redirect(url_for('login'))
+
 # Initialize email service
 email_service = EmailService()
 
@@ -493,6 +500,65 @@ def send_bulk():
         return redirect(url_for('send_bulk'))
     
     return render_template('send_bulk.html')
+
+@app.route('/send-reminder', methods=['GET', 'POST'])
+@login_required
+def send_reminder():
+    """Send payment reminder emails with enhanced validation"""
+    if request.method == 'POST':
+        try:
+            # Check if file was uploaded
+            if 'csv_file' not in request.files:
+                flash('No file uploaded', 'error')
+                return redirect(url_for('send_reminder'))
+            
+            file = request.files['csv_file']
+            
+            if file.filename == '':
+                flash('No file selected', 'error')
+                return redirect(url_for('send_reminder'))
+            
+            # Secure filename
+            filename = secure_filename(file.filename)
+            
+            if not filename.endswith('.csv'):
+                flash('Only CSV files are allowed', 'error')
+                return redirect(url_for('send_reminder'))
+            
+            # Read CSV file with size validation
+            csv_content = file.read().decode('utf-8')
+            
+            # Limit CSV size
+            if len(csv_content) > 1024 * 1024:  # 1MB limit for CSV
+                flash('CSV file is too large (max 1MB)', 'error')
+                return redirect(url_for('send_reminder'))
+            
+            csv_reader = csv.DictReader(StringIO(csv_content))
+            
+            # Parse CSV rows for database logging
+            recipients = []
+            for row in csv_reader:
+                recipient_data = {
+                    'email': row.get('email'),
+                    'name': row.get('name'),
+                    'preorder_date': row.get('preorder_date')
+                }
+                recipients.append(recipient_data)
+            
+            # Process bulk reminder emails
+            csv_reader = csv.DictReader(StringIO(csv_content))
+            results = email_service.send_bulk_reminders(csv_reader)
+            
+            flash(f'Reminder emails sent: {results["success"]} successful, {results["failed"]} failed', 
+                  'success' if results["failed"] == 0 else 'warning')
+            
+        except Exception as e:
+            app.logger.error(f'Error processing reminder emails: {str(e)}')
+            flash('Error processing file. Please check the format.', 'error')
+            
+        return redirect(url_for('send_reminder'))
+    
+    return render_template('send_reminder.html')
 
 @app.route('/sent-emails')
 @login_required

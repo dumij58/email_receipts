@@ -208,3 +208,71 @@ class EmailService:
         if DEBUG_MODE:
             logger.debug(f"Bulk send completed: {success_count} success, {failed_count} failed")
         return {'success': success_count, 'failed': failed_count, 'results': results}
+    
+    def create_reminder_email(self, recipient_name, preorder_date, quantity=1):
+        """Create HTML content for payment reminder email"""
+        from flask import render_template
+        
+        return render_template('email_reminder.html',
+                             recipient_name=recipient_name,
+                             magazine_name=self.magazine_name,
+                             preorder_date=preorder_date,
+                             purchase_amount=self.purchase_amount,
+                             quantity=quantity,
+                             sender_name=self.sender_name)
+    
+    def send_payment_reminder(self, recipient_email, recipient_name, preorder_date, quantity=1):
+        """Send a payment reminder email for pending preorders
+        
+        Returns:
+            tuple: (success: bool, message_id: str, error_message: str)
+        """
+        subject = f"Payment Reminder: Complete Your {self.magazine_name} Order"
+        html_content = self.create_reminder_email(recipient_name, preorder_date, quantity)
+        return self.send_email(recipient_email, subject, html_content)
+    
+    def send_bulk_reminders(self, csv_reader):
+        """Send bulk payment reminder emails from CSV data
+        
+        Returns:
+            dict: {'success': int, 'failed': int, 'results': list of tuples}
+        """
+        success_count = 0
+        failed_count = 0
+        results = []  # List of (recipient_email, recipient_name, success, message_id, error_message)
+        
+        for row in csv_reader:
+            try:
+                # Expected CSV columns: email, name, preorder_date, quantity (optional)
+                recipient_email = row.get('email', '').strip()
+                recipient_name = row.get('name', '').strip()
+                preorder_date = row.get('preorder_date', '').strip()
+                quantity = int(row.get('quantity', '1').strip() or '1')  # Default to 1 if not provided
+                
+                if not all([recipient_email, recipient_name, preorder_date]):
+                    if DEBUG_MODE:
+                        logger.debug(f"Skipping row with missing data: {row}")
+                    failed_count += 1
+                    results.append((recipient_email, recipient_name, False, None, "Missing required fields"))
+                    continue
+                
+                success, message_id, error_message = self.send_payment_reminder(
+                    recipient_email, recipient_name, preorder_date, quantity
+                )
+                
+                results.append((recipient_email, recipient_name, success, message_id, error_message))
+                
+                if success:
+                    success_count += 1
+                else:
+                    failed_count += 1
+                    
+            except Exception as e:
+                error_msg = f"Error processing row: {str(e)}"
+                logger.error(error_msg)
+                failed_count += 1
+                results.append((recipient_email, recipient_name, False, None, error_msg))
+        
+        if DEBUG_MODE:
+            logger.debug(f"Bulk reminder send completed: {success_count} success, {failed_count} failed")
+        return {'success': success_count, 'failed': failed_count, 'results': results}
