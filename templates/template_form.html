@@ -9,7 +9,7 @@
     </h2>
     
     <form method="POST" action="{{ url_for('template_edit', template_id=template.id) if template else url_for('template_add') }}" enctype="multipart/form-data">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         
         <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 8px; font-weight: 600;">Template Name *</label>

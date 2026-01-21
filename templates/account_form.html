@@ -9,7 +9,7 @@
     </h2>
     
     <form method="POST" action="{{ url_for('account_edit', account_id=account.id) if account else url_for('account_add') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         
         <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 8px; font-weight: 600;">Account Name *</label>

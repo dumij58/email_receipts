@@ -213,7 +213,7 @@
                         <div style="padding: 8px 20px; font-weight: bold; color: #666; font-size: 12px; text-transform: uppercase;">Switch Account</div>
                         {% for account in get_all_accounts() %}
                         <form method="POST" action="{{ url_for('account_switch', account_id=account.id) }}" style="margin: 0;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" style="all: unset; display: block; width: 100%; text-align: left; padding: 12px 20px; color: #333; cursor: pointer; transition: all 0.3s; border-radius: 5px; margin: 2px 5px; {{ 'background: #3e1c68; color: white;' if account.id == g.active_account.id else '' }}">
                                 {{ account.name }}
                                 {% if account.id == g.active_account.id %}<i class="bi bi-check-circle-fill" style="float: right;"></i>{% endif %}

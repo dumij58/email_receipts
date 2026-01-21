@@ -484,7 +484,7 @@ def send_bulk():
             
             # Process bulk emails (use original email_service logic)
             csv_reader = csv.DictReader(StringIO(csv_content))
-            results = email_service.send_bulk_receipts(csv_reader)
+            results = EmailService.send_bulk_receipts(csv_reader)
             
             # Log all emails to database
             try:
@@ -573,7 +573,7 @@ def send_reminder():
             
             # Process bulk reminder emails
             csv_reader = csv.DictReader(StringIO(csv_content))
-            results = email_service.send_bulk_reminders(csv_reader)
+            results = EmailService.send_bulk_reminders(csv_reader)
             
             flash(f'Reminder emails sent: {results["success"]} successful, {results["failed"]} failed', 
                   'success' if results["failed"] == 0 else 'warning')
@@ -815,7 +815,7 @@ def health_check():
     return jsonify({
         'status': 'healthy',
         'service': 'email-receipts',
-        'brevo_configured': email_service.is_configured()
+        'brevo_configured': EmailService.is_configured()
     })
 
 @app.route('/api/email-config')
@@ -824,11 +824,11 @@ def email_config():
     """Check Brevo/email configuration (debug endpoint)"""
     return jsonify({
         'email_service': 'Brevo (Sendinblue)',
-        'api_key_set': bool(email_service.brevo_api_key),
-        'sender_email': email_service.sender_email,
-        'sender_name': email_service.sender_name,
-        'magazine_name': email_service.magazine_name,
-        'is_configured': email_service.is_configured()
+        'api_key_set': bool(EmailService.brevo_api_key),
+        'sender_email': EmailService.sender_email,
+        'sender_name': EmailService.sender_name,
+        'magazine_name': EmailService.magazine_name,
+        'is_configured': EmailService.is_configured()
     })
 
 @app.route('/api/send-email', methods=['POST'])
@@ -872,11 +872,11 @@ def api_send_email():
         import uuid
         transaction_id = f"SNX-{uuid.uuid4().hex[:12].upper()}"
         
-        success, message_id, error_message = email_service.send_single_receipt(
+        success, message_id, error_message = EmailService.send_single_receipt(
             recipient_email=recipient_email,
             recipient_name=recipient_name,
-            magazine_name=magazine_name,
-            purchase_amount=purchase_amount,
+            magazine_name=EmailService.magazine_name,
+            purchase_amount=EmailService.purchase_amount,
             purchase_date=purchase_date,
             quantity=quantity,
             transaction_id=transaction_id,
@@ -887,7 +887,7 @@ def api_send_email():
         )
         
         # Log email to database
-        try:
+        try: 
             from datetime import timezone
             sent_email = SentEmail(
                 user_id=current_user.id,

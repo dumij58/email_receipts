@@ -92,7 +92,7 @@
     {% else %}
     
     <form method="POST" action="{{ url_for('send_single') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         
         <div class="form-group">
             <label for="template_id">Email Template *</label>
