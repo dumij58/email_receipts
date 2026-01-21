@@ -191,8 +191,8 @@
 
 {% block content %}
 <div class="form-container">
-    <h2>Send Bulk Email Receipts</h2>
-    <p style="color: #666; margin-bottom: 30px;">Upload a CSV file to send receipts to multiple customers</p>
+    <h2>Send Bulk Emails</h2>
+    <p style="color: #666; margin-bottom: 30px;">Upload a CSV file to send emails to multiple customers</p>
     
     <form method="POST" action="{{ url_for('send_bulk') }}" enctype="multipart/form-data" id="bulkForm">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">

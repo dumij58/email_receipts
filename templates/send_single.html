@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Send Single Email - Email Receipts{% endblock %}
+{% block title %}Send Single Email{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -76,17 +76,17 @@
 
 {% block content %}
 <div class="form-container">
-    <h2>Send Single Email Receipt</h2>
+    <h2>Send Single Email</h2>
     <p style="color: #666; margin-bottom: 30px;">Fill in the customer details</p>
     
     {% if not g.active_account %}
     <div style="padding: 20px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; margin-bottom: 20px;">
-        <strong>⚠️ No Active Account</strong>
+        <strong>No Active Account</strong>
         <p>Please <a href="{{ url_for('accounts_list') }}" style="color: #3e1c68;">select an account</a> before sending emails.</p>
     </div>
     {% elif not templates %}
     <div style="padding: 20px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; margin-bottom: 20px;">
-        <strong>⚠️ No Templates Available</strong>
+        <strong>No Templates Available</strong>
         <p>Please <a href="{{ url_for('template_add') }}" style="color: #3e1c68;">create a template</a> for this account first.</p>
     </div>
     {% else %}
