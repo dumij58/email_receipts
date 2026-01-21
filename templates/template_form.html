@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit Template' if template else 'Add Template' }} - Email Receipts{% endblock %}
+
+{% block content %}
+<div style="max-width: 700px; margin: 0 auto;">
+    <h2 style="color: #3e1c68; margin-bottom: 30px;">
+        {{ 'Edit Email Template' if template else 'Add New Email Template' }}
+    </h2>
+    
+    <form method="POST" action="{{ url_for('template_edit', template_id=template.id) if template else url_for('template_add') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Template Name *</label>
+            <input type="text" name="name" value="{{ template.name if template else '' }}" required
+                   placeholder="e.g., SYNEXIS Digital Receipt"
+                   style="width: 100%; padding: 12px; border: 1px solid #dee2e6; border-radius: 5px; font-size: 16px;">
+            <small style="color: #6c757d;">A descriptive name for this template</small>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Template Type *</label>
+            <select name="template_type" required
+                    style="width: 100%; padding: 12px; border: 1px solid #dee2e6; border-radius: 5px; font-size: 16px;">
+                <option value="">-- Select Type --</option>
+                <option value="receipt_digital" {{ 'selected' if template and template.template_type == 'receipt_digital' else '' }}>
+                    Digital Receipt
+                </option>
+                <option value="receipt_print" {{ 'selected' if template and template.template_type == 'receipt_print' else '' }}>
+                    Print Receipt
+                </option>
+                <option value="reminder" {{ 'selected' if template and template.template_type == 'reminder' else '' }}>
+                    Payment Reminder
+                </option>
+            </select>
+            <small style="color: #6c757d;">What type of email is this template for?</small>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">HTML Template File {{ '*' if not template else '' }}</label>
+            <input type="file" name="template_file" accept=".html" {{ 'required' if not template else '' }}
+                   style="width: 100%; padding: 12px; border: 1px solid #dee2e6; border-radius: 5px; font-size: 16px;">
+            <small style="color: #6c757d;">
+                {% if template %}
+                Current file: {{ template.template_path.split('/')[-1] }}. Upload a new file to replace it.
+                {% else %}
+                Upload an HTML file for your email template
+                {% endif %}
+            </small>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Magazine Name *</label>
+            <input type="text" name="magazine_name" value="{{ template.magazine_name if template else '' }}" required
+                   placeholder="e.g., SYNEXIS Magazine"
+                   style="width: 100%; padding: 12px; border: 1px solid #dee2e6; border-radius: 5px; font-size: 16px;">
+            <small style="color: #6c757d;">The magazine or product name to use in emails sent with this template</small>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Purchase Amount *</label>
+            <input type="text" name="purchase_amount" value="{{ template.purchase_amount if template else '' }}" required
+                   placeholder="e.g., Rs. 1500 or $15.00"
+                   style="width: 100%; padding: 12px; border: 1px solid #dee2e6; border-radius: 5px; font-size: 16px;">
+            <small style="color: #6c757d;">The price to display in emails (include currency symbol)</small>
+        </div>
+        
+        {% if template %}
+        <div style="margin-bottom: 20px;">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" name="is_active" {{ 'checked' if template.is_active else '' }}
+                       style="margin-right: 10px; width: 20px; height: 20px; cursor: pointer;">
+                <span style="font-weight: 600;">Template is active</span>
+            </label>
+            <small style="color: #6c757d; margin-left: 30px;">Inactive templates cannot be selected when sending emails</small>
+        </div>
+        {% endif %}
+        
+        <div style="margin-bottom: 30px; padding: 20px; background: #e7f3ff; border-radius: 5px; border-left: 4px solid #0066cc;">
+            <h4 style="color: #0066cc; margin-bottom: 10px;"><i class="bi bi-lightbulb"></i> Template Variables</h4>
+            <p style="color: #495057; margin-bottom: 10px;">You can use these variables in your HTML template:</p>
+            <ul style="color: #495057; line-height: 1.8; margin-left: 20px;">
+                <li><code>{{ '{{ recipient_name }}' }}</code> - Customer name</li>
+                <li><code>{{ '{{ magazine_name }}' }}</code> - Magazine name</li>
+                <li><code>{{ '{{ purchase_amount }}' }}</code> - Purchase amount</li>
+                <li><code>{{ '{{ purchase_date }}' }}</code> - Purchase date</li>
+                <li><code>{{ '{{ transaction_id }}' }}</code> - Transaction ID</li>
+                <li><code>{{ '{{ digital_link }}' }}</code>, <code>{{ '{{ digital_username }}' }}</code>, <code>{{ '{{ digital_password }}' }}</code> - For digital receipts</li>
+                <li><code>{{ '{{ preorder_date }}' }}</code> - For reminders</li>
+                <li><code>{{ '{{ sender_name }}' }}</code> - Your sender name</li>
+            </ul>
+        </div>
+        
+        <div style="display: flex; gap: 15px; margin-top: 30px;">
+            <button type="submit" style="flex: 1; padding: 12px; background: #3e1c68; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
+                <i class="bi bi-check-circle"></i> {{ 'Update Template' if template else 'Create Template' }}
+            </button>
+            {% if template %}
+            <a href="{{ url_for('template_preview', template_id=template.id) }}" target="_blank" style="flex: 1; padding: 12px; background: #17a2b8; color: white; text-align: center; text-decoration: none; border-radius: 5px; font-size: 16px;">
+                <i class="bi bi-eye"></i> Preview
+            </a>
+            {% endif %}
+            <a href="{{ url_for('templates_list') }}" style="flex: 1; padding: 12px; background: #6c757d; color: white; text-align: center; text-decoration: none; border-radius: 5px; font-size: 16px;">
+                <i class="bi bi-x-circle"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

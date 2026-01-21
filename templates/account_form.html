@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit Account' if account else 'Add Account' }} - Email Receipts{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto;">
+    <h2 style="color: #3e1c68; margin-bottom: 30px;">
+        {{ 'Edit Email Account' if account else 'Add New Email Account' }}
+    </h2>
+    
+    <form method="POST" action="{{ url_for('account_edit', account_id=account.id) if account else url_for('account_add') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Account Name *</label>
+            <input type="text" name="name" value="{{ account.name if account else '' }}" required
+                   placeholder="e.g., FOSMedia Main Account"
+                   style="width: 100%; padding: 12px; border: 1px solid #dee2e6; border-radius: 5px; font-size: 16px;">
+            <small style="color: #6c757d;">A friendly name to identify this account</small>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Brevo API Key *</label>
+            <input type="password" name="brevo_api_key" {{ '' if account else 'required' }}
+                   placeholder="{{ 'Leave blank to keep current key' if account else 'Enter your Brevo API key' }}"
+                   style="width: 100%; padding: 12px; border: 1px solid #dee2e6; border-radius: 5px; font-size: 16px;">
+            <small style="color: #6c757d;">
+                {% if account %}
+                Leave blank to keep the existing API key. Enter a new key to update it.
+                {% else %}
+                Get your API key from Brevo dashboard: Settings → API Keys
+                {% endif %}
+            </small>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Sender Email *</label>
+            <input type="email" name="sender_email" value="{{ account.sender_email if account else '' }}" required
+                   placeholder="e.g., noreply@fosmedia.lk"
+                   style="width: 100%; padding: 12px; border: 1px solid #dee2e6; border-radius: 5px; font-size: 16px;">
+            <small style="color: #6c757d;">Must be verified in your Brevo account</small>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Sender Name *</label>
+            <input type="text" name="sender_name" value="{{ account.sender_name if account else '' }}" required
+                   placeholder="e.g., FOSMedia Magazine Store"
+                   style="width: 100%; padding: 12px; border: 1px solid #dee2e6; border-radius: 5px; font-size: 16px;">
+            <small style="color: #6c757d;">The name that will appear in the "From" field</small>
+        </div>
+        
+        {% if account %}
+        <div style="margin-bottom: 20px;">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" name="is_active" {{ 'checked' if account.is_active else '' }}
+                       style="margin-right: 10px; width: 20px; height: 20px; cursor: pointer;">
+                <span style="font-weight: 600;">Account is active</span>
+            </label>
+            <small style="color: #6c757d; margin-left: 30px;">Inactive accounts cannot be used to send emails</small>
+        </div>
+        {% endif %}
+        
+        <div style="display: flex; gap: 15px; margin-top: 30px;">
+            <button type="submit" style="flex: 1; padding: 12px; background: #3e1c68; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
+                <i class="bi bi-check-circle"></i> {{ 'Update Account' if account else 'Create Account' }}
+            </button>
+            <a href="{{ url_for('accounts_list') }}" style="flex: 1; padding: 12px; background: #6c757d; color: white; text-align: center; text-decoration: none; border-radius: 5px; font-size: 16px;">
+                <i class="bi bi-x-circle"></i> Cancel
+            </a>
+        </div>
+    </form>
+    
+    {% if account %}
+    <div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 5px; border-left: 4px solid #17a2b8;">
+        <h4 style="color: #17a2b8; margin-bottom: 10px;"><i class="bi bi-info-circle"></i> Account Information</h4>
+        <ul style="color: #6c757d; line-height: 1.8;">
+            <li><strong>Created:</strong> {{ account.created_at.strftime('%Y-%m-%d %H:%M') if account.created_at else 'Unknown' }}</li>
+            <li><strong>Templates:</strong> {{ account.templates.count() }}</li>
+            <li><strong>Emails Sent:</strong> {{ account.sent_emails.count() }}</li>
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

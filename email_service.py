@@ -26,24 +26,44 @@ logger = logging.getLogger(__name__)
 class EmailService:
     """Service for handling email operations using Brevo (Sendinblue)"""
     
-    def __init__(self):
-        self.brevo_api_key = os.environ.get('BREVO_API_KEY', '') or os.environ.get('SENDGRID_API_KEY', '')
-        self.sender_email = os.environ.get('SENDER_EMAIL', '')
-        self.sender_name = os.environ.get('SENDER_NAME', 'Magazine Store')
+    def __init__(self, account=None):
+        """
+        Initialize EmailService with an EmailAccount model instance.
+        
+        Args:
+            account: EmailAccount model instance (optional - falls back to env vars for backwards compatibility)
+        """
+        # Load from account model if provided, otherwise fall back to environment variables
+        if account:
+            self.brevo_api_key = account.brevo_api_key  # Will be decrypted automatically by SQLAlchemy-Utils
+            self.sender_email = account.sender_email
+            self.sender_name = account.sender_name
+            self.account_id = account.id
+            self.account_name = account.name
+        else:
+            # Fallback to environment variables (for backwards compatibility during migration)
+            self.brevo_api_key = os.environ.get('BREVO_API_KEY', '') or os.environ.get('SENDGRID_API_KEY', '')
+            self.sender_email = os.environ.get('SENDER_EMAIL', '')
+            self.sender_name = os.environ.get('SENDER_NAME', 'Magazine Store')
+            self.account_id = None
+            self.account_name = 'Legacy Account'
+        
+        # These will be overridden by template data when provided
         self.magazine_name = os.environ.get('MAGAZINE_NAME', '[MAGAZINE_NAME]')
         self.purchase_amount = os.environ.get('PURCHASE_AMOUNT', '[PURCHASE_AMOUNT]')
         
-        # Debug logging to verify environment variables
+        # Debug logging to verify configuration
         if DEBUG_MODE:
             logger.debug(f"Initializing EmailService in {'Docker' if is_docker else 'Local'} environment")
-            logger.debug(f"Brevo API Key configured: {bool(self.brevo_api_key)} (length: {len(self.brevo_api_key) if self.brevo_api_key else 0})")
+            logger.debug(f"Account: {self.account_name} (ID: {self.account_id})")
+            logger.debug(f"Brevo API Key configured: {bool(self.brevo_api_key)} (length: {len(str(self.brevo_api_key)) if self.brevo_api_key else 0})")
             logger.debug(f"Sender Email: {self.sender_email}")
             logger.debug(f"Sender Name: {self.sender_name}")
         
         # Initialize Brevo client
         if self.brevo_api_key:
             configuration = sib_api_v3_sdk.Configuration()
-            configuration.api_key['api-key'] = self.brevo_api_key
+            configuration.api_key['api-key'] = str(self.brevo_api_key)  # Ensure it's a string
             self.api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
             if DEBUG_MODE:
                 logger.debug("Brevo API client initialized successfully")
@@ -55,10 +75,12 @@ class EmailService:
         """Check if Brevo is properly configured"""
         return bool(self.brevo_api_key and self.sender_email)
     
-    def create_receipt_email(self, recipient_name, magazine_name, purchase_amount, purchase_date, quantity=1, transaction_id=None, edition=None, digital_link=None, digital_username=None, digital_password=None):
-        """Create HTML email content for receipt using appropriate template based on edition"""
-        # Choose template based on edition type
-        if edition and edition.lower() == 'digital':
+    def create_receipt_email(self, recipient_name, magazine_name, purchase_amount, purchase_date, quantity=1, transaction_id=None, edition=None, digital_link=None, digital_username=None, digital_password=None, template_path=None):
+        """Create HTML email content for receipt using template (from EmailTemplate model or fallback)"""
+        # If template_path is provided, use it; otherwise use legacy template selection
+        if template_path:
+            template = template_path
+        elif edition and edition.lower() == 'digital':
             template = 'email_receipt_digital.html'
         else:
             template = 'email_receipt_print.html'
@@ -126,7 +148,7 @@ class EmailService:
             return (False, None, error_msg)
     
     def send_single_receipt(self, recipient_email, recipient_name, magazine_name, 
-                          purchase_amount, purchase_date, quantity=1, transaction_id=None, edition=None, digital_link=None, digital_username=None, digital_password=None):
+                          purchase_amount, purchase_date, quantity=1, transaction_id=None, edition=None, digital_link=None, digital_username=None, digital_password=None, template_path=None):
         """Send a single receipt email
         
         Returns:
@@ -135,7 +157,7 @@ class EmailService:
         subject = f"Receipt for {magazine_name} - {self.sender_name}"
         html_content = self.create_receipt_email(
             recipient_name, magazine_name, purchase_amount, purchase_date, quantity,
-            transaction_id, edition, digital_link, digital_username, digital_password
+            transaction_id, edition, digital_link, digital_username, digital_password, template_path
         )
         return self.send_email(recipient_email, subject, html_content)
     
@@ -209,26 +231,32 @@ class EmailService:
             logger.debug(f"Bulk send completed: {success_count} success, {failed_count} failed")
         return {'success': success_count, 'failed': failed_count, 'results': results}
     
-    def create_reminder_email(self, recipient_name, preorder_date, quantity=1):
+    def create_reminder_email(self, recipient_name, preorder_date, quantity=1, magazine_name=None, purchase_amount=None, template_path=None):
         """Create HTML content for payment reminder email"""
         from flask import render_template
         
-        return render_template('email_reminder.html',
+        # Use provided values or fall back to instance defaults
+        mag_name = magazine_name or self.magazine_name
+        purch_amount = purchase_amount or self.purchase_amount
+        template = template_path or 'email_reminder.html'
+        
+        return render_template(template,
                              recipient_name=recipient_name,
-                             magazine_name=self.magazine_name,
+                             magazine_name=mag_name,
                              preorder_date=preorder_date,
-                             purchase_amount=self.purchase_amount,
+                             purchase_amount=purch_amount,
                              quantity=quantity,
                              sender_name=self.sender_name)
     
-    def send_payment_reminder(self, recipient_email, recipient_name, preorder_date, quantity=1):
+    def send_payment_reminder(self, recipient_email, recipient_name, preorder_date, quantity=1, magazine_name=None, purchase_amount=None, template_path=None):
         """Send a payment reminder email for pending preorders
         
         Returns:
             tuple: (success: bool, message_id: str, error_message: str)
         """
-        subject = f"Payment Reminder: Complete Your {self.magazine_name} Order"
-        html_content = self.create_reminder_email(recipient_name, preorder_date, quantity)
+        mag_name = magazine_name or self.magazine_name
+        subject = f"Payment Reminder: Complete Your {mag_name} Order"
+        html_content = self.create_reminder_email(recipient_name, preorder_date, quantity, magazine_name, purchase_amount, template_path)
         return self.send_email(recipient_email, subject, html_content)
     
     def send_bulk_reminders(self, csv_reader):

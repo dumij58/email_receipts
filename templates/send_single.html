@@ -79,8 +79,34 @@
     <h2>Send Single Email Receipt</h2>
     <p style="color: #666; margin-bottom: 30px;">Fill in the customer details</p>
     
+    {% if not g.active_account %}
+    <div style="padding: 20px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; margin-bottom: 20px;">
+        <strong>⚠️ No Active Account</strong>
+        <p>Please <a href="{{ url_for('accounts_list') }}" style="color: #3e1c68;">select an account</a> before sending emails.</p>
+    </div>
+    {% elif not templates %}
+    <div style="padding: 20px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; margin-bottom: 20px;">
+        <strong>⚠️ No Templates Available</strong>
+        <p>Please <a href="{{ url_for('template_add') }}" style="color: #3e1c68;">create a template</a> for this account first.</p>
+    </div>
+    {% else %}
+    
     <form method="POST" action="{{ url_for('send_single') }}">
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="form-group">
+            <label for="template_id">Email Template *</label>
+            <select id="template_id" name="template_id" required>
+                <option value="">-- Select Template --</option>
+                {% for template in templates %}
+                <option value="{{ template.id }}" data-type="{{ template.template_type }}" data-magazine="{{ template.magazine_name }}" data-amount="{{ template.purchase_amount }}">
+                    {{ template.name }} ({{ template.magazine_name }} - {{ template.purchase_amount }})
+                </option>
+                {% endfor %}
+            </select>
+            <div class="form-help">Choose the template and magazine for this receipt</div>
+        </div>
+        
         <div class="form-group">
             <label for="email">Email Address *</label>
             <input type="email" id="email" name="email" required placeholder="customer@example.com">
@@ -132,15 +158,19 @@
         
         <button type="submit" class="btn">Send Email Receipt</button>
     </form>
+    {% endif %}
 </div>
 
 <script>
     // Toggle digital fields based on edition selection
     const editionSelect = document.getElementById('edition');
     const digitalFields = document.getElementById('digital-fields');
-    const digitalInputs = digitalFields.querySelectorAll('input');
+    const digitalInputs = digitalFields ? digitalFields.querySelectorAll('input') : [];
+    const templateSelect = document.getElementById('template_id');
     
     function toggleDigitalFields() {
+        if (!editionSelect || !digitalFields) return;
+        
         if (editionSelect.value === 'digital') {
             digitalFields.classList.add('show');
             // Make digital fields required
@@ -155,10 +185,29 @@
         }
     }
     
-    // Initial check
-    toggleDigitalFields();
+    // Auto-select edition based on template type
+    if (templateSelect) {
+        templateSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const templateType = selectedOption.getAttribute('data-type');
+            
+            if (templateType && editionSelect) {
+                if (templateType === 'receipt_digital') {
+                    editionSelect.value = 'digital';
+                } else if (templateType === 'receipt_print') {
+                    editionSelect.value = 'print';
+                }
+                toggleDigitalFields();
+            }
+        });
+    }
     
-    // Listen for changes
-    editionSelect.addEventListener('change', toggleDigitalFields);
+    // Initial check
+    if (editionSelect && digitalFields) {
+        toggleDigitalFields();
+        
+        // Listen for changes
+        editionSelect.addEventListener('change', toggleDigitalFields);
+    }
 </script>
 {% endblock %}

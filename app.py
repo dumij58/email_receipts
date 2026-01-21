@@ -8,7 +8,7 @@ from flask import Flask, render_template, request, jsonify, flash, redirect, url
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_migrate import Migrate
 from email_service import EmailService
-from models import db, User, SentEmail
+from models import db, User, SentEmail, EmailAccount, EmailTemplate
 import os
 import csv
 import logging
@@ -122,11 +122,10 @@ def unauthorized():
     flash('Please log in to access this page.', 'error')
     return redirect(url_for('login'))
 
-# Initialize email service
-email_service = EmailService()
-
-magazine_name = email_service.magazine_name
-purchase_amount = email_service.purchase_amount
+# Legacy email service for backwards compatibility (will be replaced by account-specific instances)
+# email_service = EmailService()  # Commented out - now using active account
+# magazine_name = email_service.magazine_name  # Commented out - now from templates
+# purchase_amount = email_service.purchase_amount  # Commented out - now from templates
 
 # ============================================
 # HELPER FUNCTIONS
@@ -194,6 +193,12 @@ def validate_csrf_token(token):
     return token == session.get('_csrf_token')
 
 app.jinja_env.globals['csrf_token'] = generate_csrf_token
+
+def get_all_accounts():
+    """Helper function to get all active accounts for template dropdown"""
+    return EmailAccount.query.filter_by(is_active=True).order_by(EmailAccount.name).all()
+
+app.jinja_env.globals['get_all_accounts'] = get_all_accounts
 
 def csrf_protect(f):
     """Decorator to protect routes with CSRF token"""
@@ -297,15 +302,33 @@ def index():
 @csrf_protect
 def send_single():
     """Send a single email receipt with enhanced validation"""
+    from flask import g
+    
+    # Check if user has an active account
+    if not g.active_account:
+        flash('Please select an email account first', 'warning')
+        return redirect(url_for('accounts_list'))
+    
     if request.method == 'POST':
         if DEBUG_MODE:
             app.logger.debug("Processing email send request")
         try:
+            # Get template selection
+            template_id = request.form.get('template_id')
+            if not template_id:
+                flash('Please select a template', 'error')
+                return redirect(url_for('send_single'))
+            
+            template = EmailTemplate.query.get(template_id)
+            if not template or template.account_id != g.active_account.id:
+                flash('Invalid template selected', 'error')
+                return redirect(url_for('send_single'))
+            
             recipient_email = sanitize_input(request.form.get('email', ''))
             recipient_name = sanitize_input(request.form.get('name', ''))
             purchase_date = sanitize_input(request.form.get('purchase_date', ''))
             edition = sanitize_input(request.form.get('edition', ''))
-            quantity = int(request.form.get('quantity', '1') or '1')  # Default to 1 if not provided
+            quantity = int(request.form.get('quantity', '1') or '1')
             
             # Digital edition fields (only if edition is digital)
             digital_link = sanitize_input(request.form.get('digital_link', '')) if edition == 'digital' else None
@@ -313,12 +336,10 @@ def send_single():
             digital_password = sanitize_input(request.form.get('digital_password', '')) if edition == 'digital' else None
             
             if DEBUG_MODE:
-                app.logger.debug(f"Form data received - Email: {recipient_email}, Name: {recipient_name}, Date: {purchase_date}, Edition: {edition}")
+                app.logger.debug(f"Form data received - Email: {recipient_email}, Template: {template.name}")
             
             # Validate inputs
             if not all([recipient_email, recipient_name, purchase_date, edition]):
-                if DEBUG_MODE:
-                    app.logger.debug("Missing required fields")
                 flash('All required fields must be filled', 'error')
                 return redirect(url_for('send_single'))
             
@@ -334,30 +355,30 @@ def send_single():
             
             # Validate email format
             if not validate_email(recipient_email):
-                if DEBUG_MODE:
-                    app.logger.debug(f"Invalid email format: {recipient_email}")
                 flash('Invalid email address format', 'error')
                 return redirect(url_for('send_single'))
             
-            # Generate transaction ID before sending
+            # Generate transaction ID
             import uuid
             transaction_id = f"SNX-{uuid.uuid4().hex[:12].upper()}"
             
-            # Send email
-            if DEBUG_MODE:
-                app.logger.debug(f"Calling email_service.send_single_receipt for {recipient_email}")
+            # Initialize email service with active account
+            email_service = EmailService(account=g.active_account)
+            
+            # Send email with template
             success, message_id, error_message = email_service.send_single_receipt(
                 recipient_email=recipient_email,
                 recipient_name=recipient_name,
-                magazine_name=magazine_name,
-                purchase_amount=purchase_amount,
+                magazine_name=template.magazine_name,
+                purchase_amount=template.purchase_amount,
                 purchase_date=purchase_date,
                 quantity=quantity,
                 transaction_id=transaction_id,
                 edition=edition,
                 digital_link=digital_link,
                 digital_username=digital_username,
-                digital_password=digital_password
+                digital_password=digital_password,
+                template_path=template.template_path
             )
             
             # Log email to database
@@ -365,10 +386,14 @@ def send_single():
                 from datetime import timezone
                 sent_email = SentEmail(
                     user_id=current_user.id,
+                    account_id=g.active_account.id,
+                    template_id=template.id,
                     recipient_email=recipient_email,
                     recipient_name=recipient_name,
                     purchase_date=purchase_date,
                     edition=edition,
+                    magazine_name=template.magazine_name,
+                    purchase_amount=template.purchase_amount,
                     digital_link=digital_link,
                     digital_username=digital_username,
                     digital_password=digital_password,
@@ -380,27 +405,28 @@ def send_single():
                 )
                 db.session.add(sent_email)
                 db.session.commit()
-                if DEBUG_MODE:
-                    app.logger.debug(f"Email transaction logged to database (ID: {sent_email.id})")
             except Exception as e:
                 app.logger.error(f"Failed to log email to database: {str(e)}")
                 db.session.rollback()
             
-            if DEBUG_MODE:
-                app.logger.debug(f"Email send result: {success}")
             if success:
                 flash(f'Email successfully sent to {recipient_email}', 'success')
             else:
                 flash('Failed to send email. Please check your configuration.', 'error')
                 
         except Exception as e:
-            # Log error but don't expose details to user
             app.logger.error(f'Error sending email: {str(e)}', exc_info=True)
             flash('An error occurred while sending the email.', 'error')
             
         return redirect(url_for('send_single'))
     
-    return render_template('send_single.html')
+    # GET request - load templates for active account
+    templates = EmailTemplate.query.filter_by(
+        account_id=g.active_account.id,
+        is_active=True
+    ).order_by(EmailTemplate.name).all()
+    
+    return render_template('send_single.html', templates=templates)
 
 @app.route('/send-bulk', methods=['GET', 'POST'])
 @login_required
@@ -892,6 +918,387 @@ def api_send_email():
     except Exception as e:
         app.logger.error(f'API error: {str(e)}')
         return jsonify({'error': 'Internal server error'}), 500
+
+# ============================================
+# ACCOUNT MANAGEMENT ROUTES
+# ============================================
+
+@app.before_request
+def load_active_account():
+    """Load active account into g for easy access in templates and routes"""
+    from flask import g
+    if current_user.is_authenticated:
+        g.active_account = current_user.active_account
+        # If user doesn't have an active account, set to first available account
+        if not g.active_account:
+            first_account = EmailAccount.query.filter_by(is_active=True).first()
+            if first_account:
+                current_user.active_account_id = first_account.id
+                db.session.commit()
+                g.active_account = first_account
+    else:
+        g.active_account = None
+
+@app.route('/accounts')
+@login_required
+def accounts_list():
+    """List all email accounts"""
+    accounts = EmailAccount.query.order_by(EmailAccount.created_at.desc()).all()
+    return render_template('accounts_list.html', accounts=accounts)
+
+@app.route('/accounts/add', methods=['GET', 'POST'])
+@login_required
+@csrf_protect
+def account_add():
+    """Add a new email account"""
+    if request.method == 'POST':
+        try:
+            name = sanitize_input(request.form.get('name', '').strip(), max_length=100)
+            brevo_api_key = request.form.get('brevo_api_key', '').strip()
+            sender_email = request.form.get('sender_email', '').strip()
+            sender_name = sanitize_input(request.form.get('sender_name', '').strip(), max_length=100)
+            
+            # Validation
+            if not all([name, brevo_api_key, sender_email, sender_name]):
+                flash('All fields are required', 'error')
+                return redirect(url_for('account_add'))
+            
+            if not validate_email(sender_email):
+                flash('Invalid sender email address', 'error')
+                return redirect(url_for('account_add'))
+            
+            # Create account (API key will be automatically encrypted)
+            account = EmailAccount(
+                name=name,
+                brevo_api_key=brevo_api_key,
+                sender_email=sender_email,
+                sender_name=sender_name,
+                is_active=True,
+                created_by=current_user.id
+            )
+            
+            db.session.add(account)
+            db.session.commit()
+            
+            flash(f'Account "{name}" created successfully', 'success')
+            return redirect(url_for('accounts_list'))
+            
+        except Exception as e:
+            app.logger.error(f'Error creating account: {str(e)}')
+            flash('Failed to create account', 'error')
+            db.session.rollback()
+            return redirect(url_for('account_add'))
+    
+    return render_template('account_form.html', account=None)
+
+@app.route('/accounts/edit/<int:account_id>', methods=['GET', 'POST'])
+@login_required
+@csrf_protect
+def account_edit(account_id):
+    """Edit an existing email account"""
+    account = EmailAccount.query.get_or_404(account_id)
+    
+    if request.method == 'POST':
+        try:
+            account.name = sanitize_input(request.form.get('name', '').strip(), max_length=100)
+            new_api_key = request.form.get('brevo_api_key', '').strip()
+            account.sender_email = request.form.get('sender_email', '').strip()
+            account.sender_name = sanitize_input(request.form.get('sender_name', '').strip(), max_length=100)
+            account.is_active = request.form.get('is_active') == 'on'
+            
+            # Only update API key if provided (otherwise keep existing)
+            if new_api_key:
+                account.brevo_api_key = new_api_key
+            
+            # Validation
+            if not all([account.name, account.sender_email, account.sender_name]):
+                flash('Name, sender email, and sender name are required', 'error')
+                return redirect(url_for('account_edit', account_id=account_id))
+            
+            if not validate_email(account.sender_email):
+                flash('Invalid sender email address', 'error')
+                return redirect(url_for('account_edit', account_id=account_id))
+            
+            db.session.commit()
+            flash(f'Account "{account.name}" updated successfully', 'success')
+            return redirect(url_for('accounts_list'))
+            
+        except Exception as e:
+            app.logger.error(f'Error updating account: {str(e)}')
+            flash('Failed to update account', 'error')
+            db.session.rollback()
+            return redirect(url_for('account_edit', account_id=account_id))
+    
+    return render_template('account_form.html', account=account)
+
+@app.route('/accounts/switch/<int:account_id>', methods=['POST'])
+@login_required
+@csrf_protect
+def account_switch(account_id):
+    """Switch active account for current user"""
+    account = EmailAccount.query.get_or_404(account_id)
+    
+    if not account.is_active:
+        flash('Cannot switch to inactive account', 'error')
+        return redirect(request.referrer or url_for('index'))
+    
+    current_user.active_account_id = account_id
+    db.session.commit()
+    
+    flash(f'Switched to account: {account.name}', 'success')
+    return redirect(request.referrer or url_for('index'))
+
+@app.route('/accounts/delete/<int:account_id>', methods=['POST'])
+@login_required
+@csrf_protect
+def account_delete(account_id):
+    """Delete an email account"""
+    account = EmailAccount.query.get_or_404(account_id)
+    
+    # Check if any users are using this account
+    users_count = User.query.filter_by(active_account_id=account_id).count()
+    if users_count > 0:
+        flash(f'Cannot delete account - {users_count} user(s) are currently using it', 'error')
+        return redirect(url_for('accounts_list'))
+    
+    try:
+        account_name = account.name
+        db.session.delete(account)
+        db.session.commit()
+        flash(f'Account "{account_name}" deleted successfully', 'success')
+    except Exception as e:
+        app.logger.error(f'Error deleting account: {str(e)}')
+        flash('Failed to delete account', 'error')
+        db.session.rollback()
+    
+    return redirect(url_for('accounts_list'))
+
+# ============================================
+# TEMPLATE MANAGEMENT ROUTES
+# ============================================
+
+@app.route('/templates')
+@login_required
+def templates_list():
+    """List all email templates for active account"""
+    from flask import g
+    if not g.active_account:
+        flash('Please select an account first', 'warning')
+        return redirect(url_for('accounts_list'))
+    
+    templates = EmailTemplate.query.filter_by(
+        account_id=g.active_account.id
+    ).order_by(EmailTemplate.created_at.desc()).all()
+    
+    return render_template('templates_list.html', templates=templates)
+
+@app.route('/templates/add', methods=['GET', 'POST'])
+@login_required
+@csrf_protect
+def template_add():
+    """Add a new email template"""
+    from flask import g
+    if not g.active_account:
+        flash('Please select an account first', 'warning')
+        return redirect(url_for('accounts_list'))
+    
+    if request.method == 'POST':
+        try:
+            name = sanitize_input(request.form.get('name', '').strip(), max_length=100)
+            template_type = request.form.get('template_type', '').strip()
+            magazine_name = sanitize_input(request.form.get('magazine_name', '').strip(), max_length=100)
+            purchase_amount = sanitize_input(request.form.get('purchase_amount', '').strip(), max_length=50)
+            
+            # File upload
+            if 'template_file' not in request.files:
+                flash('Template file is required', 'error')
+                return redirect(url_for('template_add'))
+            
+            file = request.files['template_file']
+            if file.filename == '':
+                flash('No file selected', 'error')
+                return redirect(url_for('template_add'))
+            
+            if not file.filename.endswith('.html'):
+                flash('Only HTML files are allowed', 'error')
+                return redirect(url_for('template_add'))
+            
+            # Validation
+            if not all([name, template_type, magazine_name, purchase_amount]):
+                flash('All fields are required', 'error')
+                return redirect(url_for('template_add'))
+            
+            if template_type not in ['receipt_digital', 'receipt_print', 'reminder']:
+                flash('Invalid template type', 'error')
+                return redirect(url_for('template_add'))
+            
+            # Save file
+            filename = secure_filename(file.filename)
+            template_dir = os.path.join('templates', 'email_templates', str(g.active_account.id))
+            os.makedirs(template_dir, exist_ok=True)
+            
+            file_path = os.path.join(template_dir, filename)
+            file.save(file_path)
+            
+            # Store relative path for render_template
+            template_path = f"email_templates/{g.active_account.id}/{filename}"
+            
+            # Create template record
+            template = EmailTemplate(
+                account_id=g.active_account.id,
+                name=name,
+                template_type=template_type,
+                template_path=template_path,
+                magazine_name=magazine_name,
+                purchase_amount=purchase_amount,
+                is_active=True,
+                created_by=current_user.id
+            )
+            
+            db.session.add(template)
+            db.session.commit()
+            
+            flash(f'Template "{name}" created successfully', 'success')
+            return redirect(url_for('templates_list'))
+            
+        except Exception as e:
+            app.logger.error(f'Error creating template: {str(e)}')
+            flash('Failed to create template', 'error')
+            db.session.rollback()
+            return redirect(url_for('template_add'))
+    
+    return render_template('template_form.html', template=None)
+
+@app.route('/templates/edit/<int:template_id>', methods=['GET', 'POST'])
+@login_required
+@csrf_protect
+def template_edit(template_id):
+    """Edit an existing email template"""
+    from flask import g
+    template = EmailTemplate.query.get_or_404(template_id)
+    
+    # Security check - ensure template belongs to user's active account
+    if template.account_id != g.active_account.id:
+        flash('Access denied', 'error')
+        return redirect(url_for('templates_list'))
+    
+    if request.method == 'POST':
+        try:
+            template.name = sanitize_input(request.form.get('name', '').strip(), max_length=100)
+            template.template_type = request.form.get('template_type', '').strip()
+            template.magazine_name = sanitize_input(request.form.get('magazine_name', '').strip(), max_length=100)
+            template.purchase_amount = sanitize_input(request.form.get('purchase_amount', '').strip(), max_length=50)
+            template.is_active = request.form.get('is_active') == 'on'
+            
+            # Handle file upload (optional on edit)
+            if 'template_file' in request.files:
+                file = request.files['template_file']
+                if file.filename != '':
+                    if not file.filename.endswith('.html'):
+                        flash('Only HTML files are allowed', 'error')
+                        return redirect(url_for('template_edit', template_id=template_id))
+                    
+                    # Save new file
+                    filename = secure_filename(file.filename)
+                    template_dir = os.path.join('templates', 'email_templates', str(g.active_account.id))
+                    os.makedirs(template_dir, exist_ok=True)
+                    
+                    file_path = os.path.join(template_dir, filename)
+                    file.save(file_path)
+                    
+                    # Update path
+                    template.template_path = f"email_templates/{g.active_account.id}/{filename}"
+            
+            # Validation
+            if not all([template.name, template.template_type, template.magazine_name, template.purchase_amount]):
+                flash('All fields are required', 'error')
+                return redirect(url_for('template_edit', template_id=template_id))
+            
+            if template.template_type not in ['receipt_digital', 'receipt_print', 'reminder']:
+                flash('Invalid template type', 'error')
+                return redirect(url_for('template_edit', template_id=template_id))
+            
+            db.session.commit()
+            flash(f'Template "{template.name}" updated successfully', 'success')
+            return redirect(url_for('templates_list'))
+            
+        except Exception as e:
+            app.logger.error(f'Error updating template: {str(e)}')
+            flash('Failed to update template', 'error')
+            db.session.rollback()
+            return redirect(url_for('template_edit', template_id=template_id))
+    
+    return render_template('template_form.html', template=template)
+
+@app.route('/templates/preview/<int:template_id>')
+@login_required
+def template_preview(template_id):
+    """Preview template with sample data"""
+    from flask import g
+    template = EmailTemplate.query.get_or_404(template_id)
+    
+    # Security check
+    if template.account_id != g.active_account.id:
+        flash('Access denied', 'error')
+        return redirect(url_for('templates_list'))
+    
+    # Sample data for preview
+    sample_data = {
+        'recipient_name': 'John Doe',
+        'magazine_name': template.magazine_name,
+        'purchase_amount': template.purchase_amount,
+        'purchase_date': datetime.now().strftime('%Y-%m-%d'),
+        'quantity': 1,
+        'transaction_id': 'PREVIEW-XXXX-XXXX',
+        'edition': 'digital' if template.template_type == 'receipt_digital' else 'print',
+        'digital_link': 'https://example.com/digital-edition',
+        'digital_username': 'johndoe@example.com',
+        'digital_password': 'sample123',
+        'preorder_date': datetime.now().strftime('%Y-%m-%d'),
+        'receipt_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'sender_name': g.active_account.sender_name
+    }
+    
+    try:
+        html_content = render_template(template.template_path, **sample_data)
+        return html_content
+    except Exception as e:
+        app.logger.error(f'Error previewing template: {str(e)}')
+        flash('Failed to preview template', 'error')
+        return redirect(url_for('templates_list'))
+
+@app.route('/templates/delete/<int:template_id>', methods=['POST'])
+@login_required
+@csrf_protect
+def template_delete(template_id):
+    """Delete an email template"""
+    from flask import g
+    template = EmailTemplate.query.get_or_404(template_id)
+    
+    # Security check
+    if template.account_id != g.active_account.id:
+        flash('Access denied', 'error')
+        return redirect(url_for('templates_list'))
+    
+    try:
+        template_name = template.name
+        # Optionally delete the file
+        try:
+            file_path = os.path.join('templates', template.template_path)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            app.logger.warning(f'Failed to delete template file: {str(e)}')
+        
+        db.session.delete(template)
+        db.session.commit()
+        flash(f'Template "{template_name}" deleted successfully', 'success')
+    except Exception as e:
+        app.logger.error(f'Error deleting template: {str(e)}')
+        flash('Failed to delete template', 'error')
+        db.session.rollback()
+    
+    return redirect(url_for('templates_list'))
 
 # ============================================
 # BREVO WEBHOOK ENDPOINT

@@ -205,6 +205,27 @@
             <div class="nav-brand">
                 <img src="{{ url_for('static', filename='images/synexis_logo.png') }}" alt="Synexis Logo" style="height: 50px; margin-right: 15px; border-radius: 12px;">
                 <h1>Email Receipts System</h1>
+                {% if current_user.is_authenticated and g.active_account %}
+                <div class="dropdown">
+                    <button class="dropdown-toggle" style="background: #f8f9fa; border: 1px solid #dee2e6;">
+                        <i class="bi bi-envelope-at"></i> {{ g.active_account.name }}
+                    </button>
+                    <div class="dropdown-menu">
+                        <div style="padding: 8px 20px; font-weight: bold; color: #666; font-size: 12px; text-transform: uppercase;">Switch Account</div>
+                        {% for account in get_all_accounts() %}
+                        <form method="POST" action="{{ url_for('account_switch', account_id=account.id) }}" style="margin: 0;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" style="all: unset; display: block; width: 100%; text-align: left; padding: 12px 20px; color: #333; cursor: pointer; transition: all 0.3s; border-radius: 5px; margin: 2px 5px; {{ 'background: #3e1c68; color: white;' if account.id == g.active_account.id else '' }}">
+                                {{ account.name }}
+                                {% if account.id == g.active_account.id %}<i class="bi bi-check-circle-fill" style="float: right;"></i>{% endif %}
+                            </button>
+                        </form>
+                        {% endfor %}
+                        <div style="border-top: 1px solid #dee2e6; margin: 5px 0;"></div>
+                        <a href="{{ url_for('accounts_list') }}">Manage Accounts</a>
+                    </div>
+                </div>
+                {% endif %}
             </div>
             <div class="nav-links">
                 <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}class="active"{% endif %}>Dashboard</a>
@@ -217,6 +238,13 @@
                     </div>
                 </div>
                 <a href="{{ url_for('sent_emails') }}" {% if request.endpoint == 'sent_emails' %}class="active"{% endif %}>Sent Emails</a>
+                <div class="dropdown {% if request.endpoint in ['accounts_list', 'account_add', 'account_edit', 'templates_list', 'template_add', 'template_edit'] %}active{% endif %}">
+                    <button class="dropdown-toggle">Settings</button>
+                    <div class="dropdown-menu">
+                        <a href="{{ url_for('accounts_list') }}" {% if request.endpoint in ['accounts_list', 'account_add', 'account_edit'] %}class="active"{% endif %}>Email Accounts</a>
+                        <a href="{{ url_for('templates_list') }}" {% if request.endpoint in ['templates_list', 'template_add', 'template_edit'] %}class="active"{% endif %}>Email Templates</a>
+                    </div>
+                </div>
                 {% if current_user.is_authenticated %}
                 <a href="{{ url_for('logout') }}" style="background: #dc3545; color: white;">Logout</a>
                 {% endif %}
